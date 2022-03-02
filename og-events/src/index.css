@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500&display=swap');
+
+.occasiongenius-parent-container {
+  font-family: 'Roboto', sans-serif;
+}
+
+.occasiongenius-container {
+  grid-gap: 15px;
+  display: grid;
+  grid-template-columns: 24% 24% 24% 24%;
+}
+
+.occasiongenius-container:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.occasiongenius-single-item {
+  margin-bottom: 30px;
+}
+
+.occasiongenius-single_image {
+  width: 100%;
+  height: 250px;
+  background-size: cover;
+  border-radius: 25px;
+}
+
+.occasiongenius-single_image img {
+  display: none;
+}
+
+.occasiongenius-single_title {
+  display: block;
+  font-size: 15px;
+  font-weight: bold;
+  margin-top: 5px;
+}
+
+.occasiongenius-single_location {
+  display: block;
+  font-size: 13px;
+}
+
+.occasiongenius-single_date {
+  display: block;
+  font-size: 15px;
+  color: grey;
+}
+
+.occasiongenius-pagination {
+  text-align: center;
+}
+
+.occasiongenius-pagination button {
+  background: #FDC50D;
+  color: #FFF;
+  text-transform: uppercase;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.occasiongenius-pagination p {
+  margin-right: 10px;
+  margin-left: 10px;
+  font-size: 12px;
+}
+
+.occasiongenius-pagination button, .occasiongenius-pagination p {
+  display: inline-block !important;
+  clear: none;
+  float: none;
+}
+
+@media only screen and (max-width: 990px) {
+  .occasiongenius-container {
+    grid-gap: 15px;
+    display: grid;
+    grid-template-columns: 100%;
+  }
+}
