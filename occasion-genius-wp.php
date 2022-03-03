@@ -4,15 +4,17 @@
  * Plugin Name: OccasionGenius
  * Plugin URI: https://occasiongenius.com/
  * Description: OccasionGenius allows you to easily output a beautiful and simple event without any coding.
- * Version: 0.1.0
+ * Version: 0.2.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
 
 // TODO:  Imports - Import Requires 2x run (issue with getting ID)
-// TODO:  Admin - Add custom column count/support (better design options later)
-// TODO:  Admin - Add base limit versus hard coded value
 // TODO:  React - Routing & Details Pages
+// TODO:  Mosaic Grid Style Design
+// TODO:  Hit "Run Once" Style Page (iniital import of flags, areas, etc)
+// TODO:  Debug Tools API Key / Security Setup
+// TODO:  React Components
 
 defined( 'ABSPATH' ) or die( 'Direct Access Not Allowed.' );
 
@@ -39,7 +41,7 @@ class OccasionGenius {
 
         $this->OG_WIDGET_PATH = plugin_dir_path( __FILE__ ) . '/og-events';
         $this->OG_ASSET_MANIFEST = $this->OG_WIDGET_PATH . '/build/asset-manifest.json';
-        $this->OG_DB_VERSION = "0.1.0";
+        $this->OG_DB_VERSION = "0.2.0";
 
         register_activation_hook( __FILE__, array($this, 'og_install') );
 
@@ -48,7 +50,7 @@ class OccasionGenius {
             add_action( 'wp_enqueue_scripts', array($this, "enqueue_wc_widget_js"));
         endif; 
         add_shortcode( 'occassiongenius_events', array($this, "shortcode_occassiongenius_events"));
-        add_action( 'carbon_fields_register_fields', array($this, 'plugin_settings_page') );
+        add_action( 'carbon_fields_register_fields', array($this, 'plugin_settings_page_and_blocks') );
         add_action( 'init', array($this, 'register_post_types') );
         add_action( 'carbon_fields_register_fields', array($this, 'posttype_meta_fields') );
 
@@ -111,12 +113,15 @@ class OccasionGenius {
 
 
     /**
-    * Setup Administration Panel Options & Settings
+    * Setup Administration Panel Options, Blocks, Settings
     *
     * @since 0.1.0
     */
-    function plugin_settings_page(){
+    function plugin_settings_page_and_blocks(){
 
+        $flags = $this->og_api_flags();
+        $areas = $this->og_api_areas();
+        
         $time_formats = array(
             "F j, Y, g:i a" => date("F j, Y, g:i a")
         );
@@ -240,8 +245,14 @@ class OccasionGenius {
             Field::make( 'separator', 'og_basic_settings', 'Basic Settings' )->set_classes( 'og-admin-heading' ),
             Field::make( 'text', 'og-token-key', "Token Key"),
             Field::make( 'select', 'og-time-format', 'Time Format' )->add_options( $time_formats )->set_default_value('F j, Y, g:i a')->set_width( 50 ),
-            Field::make( 'select', 'og-time-zone', 'Time Zone' )->add_options( $timezones )->set_default_value('US/Eastern')->set_width( 50 )
+            Field::make( 'select', 'og-time-zone', 'Time Zone' )->add_options( $timezones )->set_default_value('US/Eastern')->set_width( 50 ),
+            Field::make( "multiselect", "og-disabled-flags", "Disabled Flags" )->add_options( $flags )->set_width( 50 ),
+            Field::make( "multiselect", "og-disabled-areas", "Disabled Areas" )->add_options( $areas )->set_width( 50 ),
+            Field::make( 'separator', 'og_design_options', 'Design Settings' )->set_classes( 'og-admin-heading' ),
+            Field::make( 'text', 'og-design-per-page-limit', "Events Per Page")->set_default_value( "24" )
         ));
+
+        $this->register_events_block();
 
     }
 
@@ -272,7 +283,7 @@ class OccasionGenius {
                     'singular_name' => __( 'Event' )
                 ),
                 'public' => true,
-                'has_archive' => true,
+                'has_archive' => false,
                 'rewrite' => array('slug' => 'events'),
                 'supports' => array( 'title' ) ,
                 'show_in_rest' => true,
@@ -400,6 +411,100 @@ class OccasionGenius {
 
 
     /**
+    * Get Event Flags via API
+    *
+    * @since 0.2.0
+    */
+    function og_api_flags($url=NULL,$flags=NULL){
+
+        if( get_option("og_api_flags") && count(json_decode( get_option("og_api_flags") ) ) > 0 ):
+            return (array) json_decode( get_option("og_api_flags"), true );
+        else:
+            $og_token = carbon_get_theme_option( 'og-token-key' );
+
+            if(!$url){
+                $flags = array();
+                $url = "https://v2.api.occasiongenius.com/api/flag_definitions/";
+            }
+            
+            $crl = curl_init();
+            curl_setopt($crl, CURLOPT_URL, $url);
+            curl_setopt($crl, CURLOPT_RETURNTRANSFER, true);
+
+            $headers = array();
+            $headers[] = 'accept: application/json';
+            $headers[] = 'Authorization: Token ' . $og_token;
+            
+            print_r($headers);
+
+            curl_setopt($crl, CURLOPT_HTTPHEADER,$headers);
+            $rest = curl_exec($crl);
+            curl_close($crl);
+            
+            $results = json_decode($rest);
+            foreach($results->results as $flag){
+                $flags[$flag->id] = $flag->name;
+            }
+
+            print_r($results);
+
+            if($results->next):
+                $this->og_api_flags($results->next, $flags);
+            else:
+                update_option("og_api_flags", json_encode($flags));
+                return $flags;
+            endif;
+        endif;
+
+    }
+
+
+    /**
+    * Get Area Flags via API
+    *
+    * @since 0.2.0
+    */
+    function og_api_areas($url=NULL,$areas=NULL){
+
+        if( get_option("og_api_areas") && count(json_decode( get_option("og_api_areas") ) ) > 0 ):
+            return (array) json_decode( get_option("og_api_areas"), true );
+        else:
+            $og_token = carbon_get_theme_option( 'og-token-key' );
+
+            if(!$url){
+                $areas = array();
+                $url = "https://v2.api.occasiongenius.com/api/areas/";
+            }
+            
+            $crl = curl_init();
+            curl_setopt($crl, CURLOPT_URL, $url);
+            curl_setopt($crl, CURLOPT_RETURNTRANSFER, true);
+
+            $headers = array();
+            $headers[] = 'accept: application/json';
+            $headers[] = 'Authorization: Token ' . $og_token;
+            
+            curl_setopt($crl, CURLOPT_HTTPHEADER,$headers);
+            $rest = curl_exec($crl);
+            curl_close($crl);
+            
+            $results = json_decode($rest);
+            foreach($results->results as $area){
+                $areas[$area->uuid] = $area->name;
+            }
+
+            if($results->next):
+                $this->og_api_areas($results->next, $areas);
+            else:
+                update_option("og_api_areas", json_encode($areas));
+                return $areas;
+            endif;
+        endif;
+
+    }
+
+
+    /**
     * Optimize JS Loading for `wc-*` Assets
     *
     * @since 0.1.0
@@ -413,7 +518,7 @@ class OccasionGenius {
     
 
     /**
-    * Load all JS/CSS assets from 'weather' React Widget
+    * Load all JS/CSS assets from 'OccasionGenius' React Widget
     *
     * @since 0.1.0
     */
@@ -458,14 +563,26 @@ class OccasionGenius {
 
         ob_start();
         ?>
-        <script>
-        window.wcSettings = window.wcSettings || {};
-        window.wcSettings = {}
-        </script>
         <div class="og-root"></div>
         <?php
         return ob_get_clean();
 
+    }
+
+
+    /**
+    * Gutenberg Block Support
+    *
+    * @since 0.1.0
+    */
+    function register_events_block(){
+        Block::make( __( 'OccasionGenius Events' ) )->set_mode("preview")->set_render_callback( function ( $fields, $attributes, $inner_blocks ) {
+            if (strpos($_SERVER['REQUEST_URI'],'carbon-fields') !== false):
+                echo "[Events Container]";
+            else:
+                echo do_shortcode("[occassiongenius_events]");
+            endif;
+        } );        
     }
 
 
@@ -478,6 +595,12 @@ class OccasionGenius {
 
         if($_GET['occasiongenius_action'] == "import"):
             $this->import_events();
+        elseif($_GET['occasiongenius_action'] == "flags"):
+            $flags = $this->og_api_flags();
+            print_r($flags);
+        elseif($_GET['occasiongenius_action'] == "areas"):
+            $areas = $this->og_api_areas();
+            print_r($areas);            
         endif;
 
     }
@@ -497,7 +620,11 @@ class OccasionGenius {
         endif;
 
         if(!$limit):
-            $limit = 24;
+            if( carbon_get_theme_option("og-design-per-page-limit") ):
+                $limit = carbon_get_theme_option("og-design-per-page-limit");
+            else:
+                $limit = 24;
+            endif;
         endif;        
 
         $og_time_format = carbon_get_theme_option( 'og-time-format' );
