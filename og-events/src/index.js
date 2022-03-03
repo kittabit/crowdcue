@@ -1,9 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import Event from "./event"
 import './index.css';
 
 class App extends React.Component {
+
   constructor (props){
+
     super(props);
     this.state = {
       current_page: [],
@@ -11,10 +14,14 @@ class App extends React.Component {
       max_pages: [],
       events: [],
       isLoading: 1,
-      events_url: "/wp-json/occasiongenius/v1/events?page="
+      events_url: "/wp-json/occasiongenius/v1/events?page=",
+      loadingText: "Loading Current Events..."
     }
+    
   }
+
   componentDidMount() {
+
     Promise.all([
       fetch('/wp-json/occasiongenius/v1/events'),
     ])
@@ -26,12 +33,17 @@ class App extends React.Component {
       max_pages: data1.info.max_pages, 
       isLoading: 0
     }));
+
   } 
+
   handleEvent(){
+
     console.log(this.props);  
+
   }     
 
   fetchData = async (url) => {
+
     await fetch(url)
       .then((r) => r.json())
       .then((result) => {
@@ -43,11 +55,15 @@ class App extends React.Component {
       .catch((e) => {
         console.log(e);
       });
+
   };  
 
   nextPage = () => {
+
     this.setState({
-        current_page: this.state.current_page + 1
+        current_page: this.state.current_page + 1,
+        isLoading: 1,
+        loadingText: "Loading Next Page of Events..."
       },
       () => {
         const events_url = this.state.events_url + this.state.current_page;
@@ -58,11 +74,15 @@ class App extends React.Component {
         });
       }
     );
+
   };
 
   prevPage = () => {
+
     this.setState({
-        current_page: this.state.current_page - 1
+        current_page: this.state.current_page - 1,
+        isLoading: 1,
+        loadingText: "Loading Previous Page of Events..."
       },
       () => {
         const events_url = this.state.events_url + this.state.current_page;
@@ -73,41 +93,45 @@ class App extends React.Component {
         });
       }
     );
+
   };
+
   render(){
+
     const { isLoading, events, current_page, next_page, max_pages } = this.state;
 
-    return ( 
+    return (  
       <div className="occasiongenius-parent-container">
 
-        <div className="occasiongenius-container"> 
-          {this.state.events.map((item, index) => (
-            <div className="occasiongenius-single-item">
-              <div className="occasiongenius-single_image" style={{ backgroundImage: `url(${item.image_url})` }}>
-                <img src={ item.image_url } alt={ item.name } title={ item.title } loading="lazy" />
-              </div>
-              <span className="occasiongenius-single_title">{ item.name }</span>
-              <span className="occasiongenius-single_location">{ item.venue_city }, { item.venue_state }</span>
-              <span className="occasiongenius-single_date">{ item.start_date }</span>
+        {this.state.isLoading ? (
+          <div className="occassiongenius-loaded">{this.state.loadingText}</div>
+        ) : (
+          <div className="occassiongenius-loaded">
+            <div className="occasiongenius-container"> 
+              {this.state.events.map((item, index) => (            
+                  <Event data={item}  />
+              ))}
+            </div> 
+
+            <div className="occasiongenius-pagination">
+                {current_page > 1 &&
+                  <button onClick={this.prevPage}>Previous Page</button>
+                }
+
+                <p>Page {current_page} of {max_pages}</p>
+
+                {next_page < max_pages &&
+                  <button onClick={this.nextPage}>Next Page</button>
+                }
             </div>
-          ))}
-        </div> 
+          </div>
+        )}
 
-        <div className="occasiongenius-pagination">
-            {current_page > 1 &&
-              <button onClick={this.prevPage}>Previous Page</button>
-            }
-
-            <p>Page {current_page} of {max_pages}</p>
-
-            {next_page < max_pages &&
-              <button onClick={this.nextPage}>Next Page</button>
-            }
-        </div>
- 
       </div>
     );
+
   }
+
 }
 
 const targets = document.querySelectorAll('.og-root');

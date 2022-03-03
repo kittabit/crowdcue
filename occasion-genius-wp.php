@@ -4,7 +4,7 @@
  * Plugin Name: OccasionGenius
  * Plugin URI: https://occasiongenius.com/
  * Description: OccasionGenius allows you to easily output a beautiful and simple event without any coding.
- * Version: 0.2.0
+ * Version: 0.3.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
@@ -12,8 +12,7 @@
 // TODO:  Imports - Import Requires 2x run (issue with getting ID)
 // TODO:  React - Routing & Details Pages
 // TODO:  Mosaic Grid Style Design
-// TODO:  Hit "Run Once" Style Page (iniital import of flags, areas, etc)
-// TODO:  Debug Tools API Key / Security Setup
+// TODO:  Hit "Run Once" Style Page (iniital import of flags, areas, etc) - update_db_check()
 // TODO:  React Components
 
 defined( 'ABSPATH' ) or die( 'Direct Access Not Allowed.' );
@@ -41,7 +40,7 @@ class OccasionGenius {
 
         $this->OG_WIDGET_PATH = plugin_dir_path( __FILE__ ) . '/og-events';
         $this->OG_ASSET_MANIFEST = $this->OG_WIDGET_PATH . '/build/asset-manifest.json';
-        $this->OG_DB_VERSION = "0.2.0";
+        $this->OG_DB_VERSION = "0.3.0";
 
         register_activation_hook( __FILE__, array($this, 'og_install') );
 
@@ -53,7 +52,7 @@ class OccasionGenius {
         add_action( 'carbon_fields_register_fields', array($this, 'plugin_settings_page_and_blocks') );
         add_action( 'init', array($this, 'register_post_types') );
         add_action( 'carbon_fields_register_fields', array($this, 'posttype_meta_fields') );
-
+        add_action( 'plugins_loaded', array($this, 'update_db_check') );
         add_action( 'admin_enqueue_scripts', array($this, 'admin_css_enqueue') );
         add_action( 'init', array($this, 'debug_plugin_functions'), 999 );
 
@@ -100,13 +99,27 @@ class OccasionGenius {
     *
     * @since 0.1.0
     */
-    function wc_install(){
+    function og_install(){
 
         global $wpdb;
         $installed_ver = get_option( "wc_og_version" );
 
         if ( $installed_ver != $this->OG_DB_VERSION ):
             update_option("wc_og_version", $this->OG_DB_VERSION);
+        endif;
+
+    }
+
+    
+    /**
+    * Checks Database & Sets Up Data Store (for upgrades versus activation/installation)
+    *
+    * @since 0.3.0
+    */
+    function update_db_check(){
+
+        if ( get_site_option( 'wc_og_version' ) != $this->OG_DB_VERSION ):
+            $this->og_install();
         endif;
 
     }
@@ -249,7 +262,9 @@ class OccasionGenius {
             Field::make( "multiselect", "og-disabled-flags", "Disabled Flags" )->add_options( $flags )->set_width( 50 ),
             Field::make( "multiselect", "og-disabled-areas", "Disabled Areas" )->add_options( $areas )->set_width( 50 ),
             Field::make( 'separator', 'og_design_options', 'Design Settings' )->set_classes( 'og-admin-heading' ),
-            Field::make( 'text', 'og-design-per-page-limit', "Events Per Page")->set_default_value( "24" )
+            Field::make( 'text', 'og-design-per-page-limit', "Events Per Page")->set_default_value( "24" ),
+            Field::make( 'separator', 'og_developer_settings', 'Developer Settings' )->set_classes( 'og-admin-heading' ),
+            Field::make( 'text', 'og-developer-security-key', "Developer Security Key")->set_default_value( md5(rand() . "-og-" . time() ) )
         ));
 
         $this->register_events_block();
@@ -434,8 +449,6 @@ class OccasionGenius {
             $headers = array();
             $headers[] = 'accept: application/json';
             $headers[] = 'Authorization: Token ' . $og_token;
-            
-            print_r($headers);
 
             curl_setopt($crl, CURLOPT_HTTPHEADER,$headers);
             $rest = curl_exec($crl);
@@ -445,8 +458,6 @@ class OccasionGenius {
             foreach($results->results as $flag){
                 $flags[$flag->id] = $flag->name;
             }
-
-            print_r($results);
 
             if($results->next):
                 $this->og_api_flags($results->next, $flags);
@@ -576,6 +587,7 @@ class OccasionGenius {
     * @since 0.1.0
     */
     function register_events_block(){
+
         Block::make( __( 'OccasionGenius Events' ) )->set_mode("preview")->set_render_callback( function ( $fields, $attributes, $inner_blocks ) {
             if (strpos($_SERVER['REQUEST_URI'],'carbon-fields') !== false):
                 echo "[Events Container]";
@@ -583,6 +595,7 @@ class OccasionGenius {
                 echo do_shortcode("[occassiongenius_events]");
             endif;
         } );        
+        
     }
 
 
@@ -592,15 +605,19 @@ class OccasionGenius {
     * @since 0.1.0
     */
     function debug_plugin_functions(){
+        
+        $og_dev_key = carbon_get_theme_option( 'og-developer-security-key' );
 
-        if($_GET['occasiongenius_action'] == "import"):
-            $this->import_events();
-        elseif($_GET['occasiongenius_action'] == "flags"):
-            $flags = $this->og_api_flags();
-            print_r($flags);
-        elseif($_GET['occasiongenius_action'] == "areas"):
-            $areas = $this->og_api_areas();
-            print_r($areas);            
+        if(isset($_GET['og_dev_key']) && $_GET['og_dev_key'] == $og_dev_key):
+            if($_GET['occasiongenius_action'] == "import"):
+                $this->import_events();
+            elseif($_GET['occasiongenius_action'] == "flags"):
+                $flags = $this->og_api_flags();
+                print_r($flags);
+            elseif($_GET['occasiongenius_action'] == "areas"):
+                $areas = $this->og_api_areas();
+                print_r($areas);            
+            endif;
         endif;
 
     }
