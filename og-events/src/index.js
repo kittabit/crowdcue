@@ -112,8 +112,5 @@ class App extends React.Component {
 
 const targets = document.querySelectorAll('.og-root');
 Array.prototype.forEach.call(targets, target => {
-  const id = target.dataset.id;
-  const settings = window.wcSettings[id];
-
   ReactDOM.render(React.createElement(App, null), target);
 });
