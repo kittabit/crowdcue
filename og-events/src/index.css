@@ -79,6 +79,10 @@
   text-align: center;
 }
 
+.occasiongenius-single-item a * {
+  text-decoration: none !important;
+}
+
 @media only screen and (max-width: 990px) {
   .occasiongenius-container {
     grid-gap: 15px;
