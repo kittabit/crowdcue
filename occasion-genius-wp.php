@@ -4,16 +4,18 @@
  * Plugin Name: OccasionGenius
  * Plugin URI: https://occasiongenius.com/
  * Description: OccasionGenius allows you to easily output a beautiful and simple event without any coding.
- * Version: 0.3.0
+ * Version: 0.4.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
 
-// TODO:  Imports - Import Requires 2x run (issue with getting ID)
-// TODO:  React - Routing & Details Pages
-// TODO:  Mosaic Grid Style Design
-// TODO:  Hit "Run Once" Style Page (iniital import of flags, areas, etc) - update_db_check()
-// TODO:  React Components
+// TODO:  `update_db_check` Initial Data Setup
+// TODO:  `post_exists` ID Issues
+// TODO:  Index Mosaic Design & Theme
+// TODO:  Details Page Design 
+// TODO:  Filters Component
+// TODO:  Search Component
+// TODO:  Browser History
 
 defined( 'ABSPATH' ) or die( 'Direct Access Not Allowed.' );
 
@@ -40,7 +42,7 @@ class OccasionGenius {
 
         $this->OG_WIDGET_PATH = plugin_dir_path( __FILE__ ) . '/og-events';
         $this->OG_ASSET_MANIFEST = $this->OG_WIDGET_PATH . '/build/asset-manifest.json';
-        $this->OG_DB_VERSION = "0.3.0";
+        $this->OG_DB_VERSION = "0.4.0";
 
         register_activation_hook( __FILE__, array($this, 'og_install') );
 
@@ -51,6 +53,7 @@ class OccasionGenius {
         add_shortcode( 'occassiongenius_events', array($this, "shortcode_occassiongenius_events"));
         add_action( 'carbon_fields_register_fields', array($this, 'plugin_settings_page_and_blocks') );
         add_action( 'init', array($this, 'register_post_types') );
+        add_action( 'after_setup_theme', array($this, 'load_carbon_fields') );
         add_action( 'carbon_fields_register_fields', array($this, 'posttype_meta_fields') );
         add_action( 'plugins_loaded', array($this, 'update_db_check') );
         add_action( 'admin_enqueue_scripts', array($this, 'admin_css_enqueue') );
@@ -62,6 +65,12 @@ class OccasionGenius {
               'callback' => array($this, 'api_response_data'),
             ));
         });
+        add_action( 'rest_api_init', function () {
+            register_rest_route( 'occasiongenius/v1', '/event/(?P<uuid>\S+)', array(
+              'methods' => 'GET',
+              'callback' => array($this, 'api_single_response_data'),
+            ));
+        });        
         add_action( 'wp', array($this, 'og_scheduled_tasks') );
         add_action( 'og_sync_events', array($this, 'import_events') );
 
@@ -574,7 +583,7 @@ class OccasionGenius {
 
         ob_start();
         ?>
-        <div class="og-root"></div>
+        <div id="App" class="og-root"></div>
         <?php
         return ob_get_clean();
 
@@ -707,6 +716,71 @@ class OccasionGenius {
         wp_reset_query();
 
         return $events;
+
+    }
+
+
+    /**
+    * API Single Event Response (JSON Data)
+    *
+    * @since 0.4.0
+    */
+    function api_single_response_data( $data ){
+
+        $uuid = $data['uuid'];
+
+        $query = new WP_Query( array(
+            'post_type'=>'og_events',
+            'meta_query'=>array(
+                array(
+                    'key' => 'og-event-uuid',
+                    'value' => $uuid,
+                ),
+            ),
+        ) );
+
+        $og_time_format = carbon_get_theme_option( 'og-time-format' );
+        if(!$og_time_format): $og_time_format = "F j, Y, g:i a"; endif;
+
+        $og_time_zone = carbon_get_theme_option( 'og-time-zone' );
+        if(!$og_time_zone): $og_time_zone = "US/Eastern"; endif;
+
+        date_default_timezone_set($og_time_zone);
+
+        $event_details = array();
+        while($query->have_posts()) :
+            $query->the_post();
+
+            $event_details["event"] = array(
+                "id" => get_the_ID(),
+                "name" => carbon_get_the_post_meta( 'og-event-name' ),
+                "uuid" => carbon_get_the_post_meta( 'og-event-uuid' ),
+                "popularity_score" => carbon_get_the_post_meta( 'og-event-popularity-score' ),
+                "description" => carbon_get_the_post_meta( 'og-event-description' ),
+                "flags" => carbon_get_the_post_meta( 'og-event-flags' ),
+                "start_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
+                "end_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' ))),
+                "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
+                "end_date_unix" => carbon_get_the_post_meta( 'og-event-end-date-unix' ),
+                "event_dates" => carbon_get_the_post_meta( 'og-event-event-dates' ),
+                "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
+                "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
+                "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
+                "venue_name" => carbon_get_the_post_meta( 'og-event-venue-name' ),
+                "venue_uuid" => carbon_get_the_post_meta( 'og-event-venue-uuid' ),
+                "venue_address_1" => carbon_get_the_post_meta( 'og-event-venue-address-1' ),
+                "venue_address_2" => carbon_get_the_post_meta( 'og-event-venue-address-2' ),
+                "venue_city" => carbon_get_the_post_meta( 'og-event-venue-city' ),
+                "venue_state" => carbon_get_the_post_meta( 'og-event-venue-state' ),
+                "venue_zip" => carbon_get_the_post_meta( 'og-event-venue-zip-code' ),
+                "venue_country" => carbon_get_the_post_meta( 'og-event-venue-country' ),
+                "latitude" => carbon_get_the_post_meta( 'og-event-venue-latitude' ),
+                "longitude" => carbon_get_the_post_meta( 'og-event-venue-longitude' )
+            );
+        endwhile;
+
+        wp_reset_query();
+        return $event_details;
 
     }
 
