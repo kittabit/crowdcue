@@ -7,9 +7,9 @@ function EventDetails() {
     const { slug } = useParams();
 
     return (
-        <div>
+        <>            
             <EventSingle uuid={slug} />
-        </div>
+        </>
     );
 }
 
