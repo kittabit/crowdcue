@@ -1,6 +1,6 @@
 {
   "name": "og-events",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "homepage": "/wp-content/plugins/occasion-genius-wp/og-events/build",
   "dependencies": {
@@ -14,7 +14,7 @@
     "web-vitals": "^2.1.4"
   },
   "watch": {
-    "build": "src/*.js"
+    "build": "src/**"
   },
   "scripts": {
     "start": "react-scripts start",

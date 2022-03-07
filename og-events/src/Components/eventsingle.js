@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from "react-router-dom";
 class EventSingle extends React.Component {
 
     constructor (props){
@@ -37,31 +38,63 @@ class EventSingle extends React.Component {
     render() {
 
         return ( 
+            <>
+                {(() => {
+                    if (this.state.isLoading) {
+                        return (
+                            <div className="occassiongenius-loaded">Loading Event Details...</div>
+                        )
+                    } else {
+                        return (
 
-            <div className="occasiongenius-single-page">
-                
-                <h4>[work_in_progress]</h4>
+                            <div className="occasiongenius-single-page" data-popularity={ this.state.event.popularity_score }>
+                                
+                                <Link to="/events/" className="return_to_all_events">&lt; Return to All Events</Link>
 
-                <span>Name: </span> { this.state.event.name } (#{this.props.uuid}<br />
-                <span>popularity_score: </span> { this.state.event.popularity_score }<br />
-                <span>description: </span> { this.state.event.description }<br />
-                <span>start_date: </span> { this.state.event.start_date }<br />
-                <span>end_date: </span> { this.state.event.end_date }<br />
-                <span>source_url: </span> { this.state.event.source_url }<br />
-                <span>ticket_url: </span> { this.state.event.ticket_url }<br />
-                <span>venue_name: </span> { this.state.event.venue_name }<br />
-                <span>venue_uuid: </span> { this.state.event.venue_uuid }<br />
-                <span>venue_address_1: </span> { this.state.event.venue_address_1 }<br />
-                <span>venue_address_2: </span> { this.state.event.venue_address_2 }<br />
-                <span>venue_city: </span> { this.state.event.venue_city }<br />
-                <span>venue_state: </span> { this.state.event.venue_state }<br />
-                <span>venue_zip: </span> { this.state.event.venue_zip }<br />
-                <span>venue_country: </span> { this.state.event.venue_country }<br />
-                <span>latitude: </span> { this.state.event.latitude }<br />
-                <span>longitude: </span> { this.state.event.longitude }<br />
-                
-            </div>
+                                <div className="occassiongenius-single-page-image" style={{ backgroundImage: `url(${this.state.event.image_url})` }}>
+                                    <img src={this.state.event.image_url} alt={this.state.event.name} />
+                                </div>
 
+                                <h1 className="occassiongenius-single-title" data-uuid={this.props.uuid}>{ this.state.event.name }</h1>
+                                <div className="occassiongenius-single-description">{ this.state.event.description }</div>
+
+                                <div className="occassiongenius-single-times"> 
+                                    <span>
+                                    { this.state.event.start_date } 
+                                    {this.state.event.venue_address_2 &&
+                                        <>
+                                            - { this.state.event.end_date }
+                                        </>
+                                    }
+                                    </span>
+                                </div>
+                                
+                                <div className="occassiongenius-single-venue-information" data-venue_uuid={ this.state.event.venue_uuid }>
+                                    <h4 className="occassiongenius-single-venue-information-title">{ this.state.event.venue_name }</h4>
+                                    <address>
+                                        { this.state.event.venue_address_1 }<br />
+                                        {this.state.event.venue_address_2 &&
+                                            <>
+                                                { this.state.event.venue_address_2 }<br />
+                                            </>
+                                        }
+                                        { this.state.event.venue_city }, { this.state.event.venue_state } { this.state.event.venue_zip } { this.state.event.venue_country }<br />
+                                    </address>
+                                </div>
+
+                                {this.state.event.ticket_url &&
+                                    <a href={ this.state.event.ticket_url } className="occassiongenius-single-venue-get-tickets" rel="noopener noreferrer" target="_blank" title="Get Tickets">
+                                        Get Tickets
+                                    </a>
+                                }
+
+                                <div className="occassiongenius-single-mapping" data-lat={ this.state.event.latitude } data-long={ this.state.event.longitude }></div>
+                                
+                            </div>
+                        )
+                    }
+                })()}
+            </>
         );
 
     }

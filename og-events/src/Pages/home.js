@@ -116,9 +116,6 @@ class Home extends Component {
                             {current_page > 1 &&
                                 <button onClick={this.prevPage}>Previous Page</button>
                             }
-
-                            <p>Page {current_page} of {max_pages}</p>
-
                             {next_page < max_pages &&
                                 <button onClick={this.nextPage}>Next Page</button>
                             }
