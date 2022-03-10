@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
+import { Link } from "react-router-dom";
 import Event from "../Components/event"
+import OGHeading from "../Components/ogheading"
 import '../index.css';
 
 class Home extends Component {
@@ -20,7 +22,6 @@ class Home extends Component {
     }
     
     componentDidMount() {
-
         Promise.all([
           fetch('/wp-json/occasiongenius/v1/events'),
         ])
@@ -32,7 +33,16 @@ class Home extends Component {
           max_pages: data1.info.max_pages, 
           isLoading: 0
         }));
-    
+
+        if(this.props.number){
+          this.nextPage();
+          this.setState({
+            current_page: this.props.number
+          });
+        }
+
+        console.table(this.props);
+
     } 
     
     handleEvent(){
@@ -106,6 +116,8 @@ class Home extends Component {
                     <div className="occassiongenius-loaded">{this.state.loadingText}</div>
                 ) : (
                     <div className="occassiongenius-loaded">
+                        <OGHeading />
+
                         <div className="occasiongenius-container"> 
                             {this.state.events.map((item, index) => (            
                                 <Event data={item}  />
@@ -114,10 +126,14 @@ class Home extends Component {
 
                         <div className="occasiongenius-pagination">
                             {current_page > 1 &&
-                                <button onClick={this.prevPage}>Previous Page</button>
+                                <>
+                                    <button onClick={this.prevPage}>Previous Page</button>
+                                </>
                             }
                             {next_page < max_pages &&
-                                <button onClick={this.nextPage}>Next Page</button>
+                                <>
+                                  <button onClick={this.nextPage}>Next Page</button>
+                                </>                                
                             }
                         </div>
                     </div>

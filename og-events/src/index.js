@@ -12,9 +12,10 @@ class App extends Component {
         <Routes>
           <Route path="/events/" element={<Layout />}>
             <Route index element={<Home />} />
+            <Route path="/events/page/:number" element={<Home />} />
             <Route path="/events/details/:slug" element={<EventDetails />} />
           </Route>
-        </Routes>
+        </Routes> 
     </BrowserRouter>
     );
   }

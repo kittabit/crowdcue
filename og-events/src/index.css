@@ -2,12 +2,25 @@
   --main-og-color: #FDC50D;
   --secondary-og-color: #3B3C3D;
   --tertiary-og-color: #2B44FF;  
+
+  /* --og-primary-color: #FE4A49;
+  --og-secondary-color: #FED766;
+  --og-tertiary-color: #009FB7;
+  --og-quaternary-color: #E6E6EA;
+  --og-quinary-color: #F4F4F8; */
+
+  --og-primary-color: #212738;
+  --og-secondary-color: #F97068;
+  --og-tertiary-color: #D1D646;
+  --og-quaternary-color: #EDF2EF;
+  --og-quinary-color: #57C4E5;
+  
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400;600;700&display=swap');
 
 .occasiongenius-parent-container {
-  font-family: 'Roboto', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .occasiongenius_clear {
@@ -28,7 +41,11 @@
   grid-template-columns: 24% 24% 24% 24%; */
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  grid-gap: 1rem;  
+  grid-gap: 1rem; 
+  background: #ededed;
+  padding: 20px; 
+  margin-top: -42px;
+  padding-top: 55px;
 } 
 
 .occasiongenius-container:after {
@@ -44,7 +61,7 @@
 .occasiongenius-tile {
   position: relative;
   border: 2px solid #ececec;
-  border-radius: 25px;
+  border-radius: 15px;
   overflow: hidden;
 }
 
@@ -58,10 +75,7 @@
 }
 
 .occasiongenius-tile:nth-child(2),
-.occasiongenius-tile:nth-child(3),
-.occasiongenius-tile:nth-child(6),
-.occasiongenius-tile:nth-child(7),
-.occasiongenius-tile:nth-child(8){
+.occasiongenius-tile:nth-child(3){
   grid-column: span 2;
 }
 
@@ -75,11 +89,14 @@
 
 .occasiongenius-tile:nth-child(4),
 .occasiongenius-tile:nth-child(5),
+.occasiongenius-tile:nth-child(6),
+.occasiongenius-tile:nth-child(7),
+.occasiongenius-tile:nth-child(8),
 .occasiongenius-tile:nth-child(9),
 .occasiongenius-tile:nth-child(10),
 .occasiongenius-tile:nth-child(11),
 .occasiongenius-tile:nth-child(12){
-  grid-column: span 3;
+  grid-column: span 2;
 }
 
 .occasiongenius-tile:nth-child(4) .occasiongenius-single_image,
@@ -104,15 +121,15 @@
 
 .occasiongenius-single_title {
   display: block;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: bold;
   margin-bottom: 7px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .occasiongenius-single_location {
   display: block;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .occasiongenius-single_location svg {
@@ -130,7 +147,7 @@
   float: left;
   width: 15%;
   height: 100%;
-  background-color: var(--main-og-color);
+  background-color: var(--og-quinary-color);
   min-height: 58px;
   padding-top: 10px;
 }
@@ -143,22 +160,28 @@
 
 .occasiongenius-pagination {
   text-align: center;
-  margin-top: 25px;
+  padding-top: 25px;
+  text-align: center;
+  background: #ededed;
+  padding-bottom: 25px;
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;  
 }
 
 .occasiongenius-pagination button {
-  background: #FDC50D;
-  color: #FFF;
-  text-transform: uppercase;
-  padding: 10px;
+  background: var(--og-quinary-color);
   border: none;
   border-radius: 10px;
+  color: #fff;
   cursor: pointer;
-  font-family: 'Roboto', sans-serif;
-  padding-left: 15px;
-  padding-right: 15px;
+  font-family: Inter,sans-serif;
   margin-left: 7px;
-  margin-right: 7px;  
+  margin-right: 7px;
+  padding: 10px 15px;
+  text-transform: uppercase;
+  font-weight: 300;
+  border-radius: 2px; 
+  font-size: 14px;
 }
 
 .occasiongenius-pagination p {
@@ -189,13 +212,13 @@
 }
 
 span.occasiongenius-single_date_day, span.occasiongenius-single_date_month {
-  color: var(--secondary-og-color);
+  color: var(--og-quaternary-color);
   display: block;
   line-height: 100%;
 }
 
 span.occasiongenius-single_title, span.occasiongenius-single_location {
-  padding-left: 15px;
+  padding-left: 9px;
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
@@ -208,12 +231,12 @@ span.occasiongenius-single_date_day {
 }
 
 span.occasiongenius-single_title {
-  color: var(--tertiary-og-color);
+  color: var(--og-primary-color);
 }
 
 span.occasiongenius-single_location {
-  color: var(--secondary-og-color);
-  fill: var(--secondary-og-color);
+  color: #B7B5B3;
+  fill: #B7B5B3;
 }
 
 @media only screen and (max-width: 990px) {
@@ -231,7 +254,7 @@ span.occasiongenius-single_location {
   background-size: cover !important;
   width: 100%;
   background-position: center center !important;
-  border-radius: 25px;
+  border-radius: 15px;
 } 
 
 .occassiongenius-single-page-image img {
@@ -282,4 +305,97 @@ h4.occassiongenius-single-venue-information-title {
   text-decoration: none;
   color: #FFF;
   margin-top: 25px;
+}
+
+/* OGHeading */
+.occassiongenius-header {
+  background: var(--og-primary-color);
+  min-height: 140px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+}
+
+.occassiongenius-header h1 {
+  font-family: Roboto,sans-serif;
+  color: #FFF;
+  font-size: 45px;
+  padding-top: 26px;  
+}
+
+.occassiongenius-search {
+  /* position: absolute;
+  bottom: -20px; */
+  width: 90%;
+  border: 1px solid #FFF;
+  margin: 0 auto;
+  padding: 10px;
+  /* left: 5%; */
+  margin-top: -30px;
+  z-index: 2;
+  position: relative;
+  background: #FFF;
+  /* margin-bottom: 20px; */
+  border-radius: 50px;
+  border: 2px solid #ededed;
+}
+
+.occasiongenius-search-form-group {
+  position: relative;
+  width: 20%;
+  display: inline-block;
+}
+
+.occasiongenius-search-form-group label {
+  display: none;
+}
+
+.occasiongenius-search-form-group svg {
+  width: 12px;
+  position: absolute;
+  left: 10px;
+  top: 16px;
+}
+
+.occasiongenius-search-form-group input[type="text"] {
+  padding-left: 29px;
+  font-size: 14px;
+  border: none;
+  margin: 0px;
+}
+
+.occasiongenius-search-form-group input[type="date"] {
+  padding-left: 29px;
+  font-size: 14px;
+  border: none;
+  margin: 0px;  
+}
+
+.occasiongenius-search-form-group input[type="submit"] {
+  height: auto;
+  padding: 7px;
+  padding-left: 15px;
+  padding-right: 15px;
+  background: var(--og-tertiary-color);
+  text-transform: uppercase; 
+  font-family: Inter,sans-serif;
+  position: absolute;
+  top: -40px;
+  left: 0px;
+  height: 70px !important;
+  display: block;
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px;
+  width: 107%;
+  border-top-right-radius: 50px;
+  border-bottom-right-radius: 50px;
+  border: none !important; 
+}
+
+.occasiongenius-search-form-group input[type=submit]:hover {
+  top: -41px;
+}
+
+.occasiongenius-search-form-group input[type="date"]::-webkit-inner-spin-button,
+.occasiongenius-search-form-group input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0 !important;
 }

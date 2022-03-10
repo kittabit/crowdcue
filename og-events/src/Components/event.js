@@ -9,7 +9,7 @@ class Event extends React.Component {
 
         return ( 
 
-            <div className="occasiongenius-single-item occasiongenius-tile" itemscope itemtype="https://schema.org/Event">
+            <div className="occasiongenius-single-item occasiongenius-tile" data-pop_score={this.props.data.popularity_score} itemscope itemtype="https://schema.org/Event">
                 <Link to={`/events/details/${this.props.data.slug}`}>
                     <div className="occasiongenius-single_image" style={{ backgroundImage: `url(${this.props.data.image_url})` }}>
                         <img src={ this.props.data.image_url } alt={ this.props.data.name } title={ this.props.data.title } loading="lazy" />
