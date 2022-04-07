@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
-import Event from "../Components/event"
+import { Link } from "react-router-dom";
+import Header from '../Components/Header';
+import EventCategorySmall from '../Components/EventCategorySmall';
 import '../index.css';
 
 class Home extends Component {
@@ -8,122 +10,39 @@ class Home extends Component {
 
         super(props);
         this.state = {
-          current_page: [],
-          next_page: [],
-          max_pages: [],
-          events: [],
-          isLoading: 1,
-          events_url: "/wp-json/occasiongenius/v1/events?page=",
-          loadingText: "Loading Current Events..."
+
         }
         
     }
     
     componentDidMount() {
 
-        Promise.all([
-          fetch('/wp-json/occasiongenius/v1/events'),
-        ])
-        .then(([res1]) => Promise.all([res1.json()]))
-        .then(([data1]) => this.setState({
-          events: data1.events,
-          current_page: data1.info.current_page, 
-          next_page: data1.info.next_page, 
-          max_pages: data1.info.max_pages, 
-          isLoading: 0
-        }));
-    
-    } 
-    
-    handleEvent(){
-    
-        console.log(this.props);  
-    
-    }     
-    
-    fetchData = async (url) => {
-    
-        await fetch(url)
-          .then((r) => r.json())
-          .then((result) => {
-            this.setState({
-              events: result.events,
-              isLoading: 0
-            });
-          })
-          .catch((e) => {
-            console.log(e);
-          });
-    
-    };  
-    
-    nextPage = () => {
-    
-        this.setState({
-            current_page: this.state.current_page + 1,
-            isLoading: 1,
-            loadingText: "Loading Next Page of Events..."
-          },
-          () => {
-            const events_url = this.state.events_url + this.state.current_page;
-            this.fetchData(events_url);
-            window.scrollTo({
-              top: 0,
-              behavior: "smooth"
-            });
-          }
-        );
-    
-    };
-    
-    prevPage = () => {
-    
-        this.setState({
-            current_page: this.state.current_page - 1,
-            isLoading: 1,
-            loadingText: "Loading Previous Page of Events..."
-          },
-          () => {
-            const events_url = this.state.events_url + this.state.current_page;
-            this.fetchData(events_url);
-            window.scrollTo({
-              top: 0,
-              behavior: "smooth"
-            });
-          }
-        );
-    
-    };
+        document.title = "Local Events";
+
+    }   
 
     render(){
-
-        const { current_page, next_page, max_pages } = this.state;
-
         return (
-            <div className="occasiongenius-parent-container">
+            <>
+                <Header />
 
-                {this.state.isLoading ? (
-                    <div className="occassiongenius-loaded">{this.state.loadingText}</div>
-                ) : (
-                    <div className="occassiongenius-loaded">
-                        <div className="occasiongenius-container"> 
-                            {this.state.events.map((item, index) => (            
-                                <Event data={item}  />
-                            ))}
-                        </div> 
+                {JSON.parse(window.ogSettings.og_featured_flags).map((item, index) => (
+                  <>
+                    <EventCategorySmall event_cat_id={item} key={index} />
+                  </>
+                ))}
 
-                        <div className="occasiongenius-pagination">
-                            {current_page > 1 &&
-                                <button onClick={this.prevPage}>Previous Page</button>
-                            }
-                            {next_page < max_pages &&
-                                <button onClick={this.nextPage}>Next Page</button>
-                            }
-                        </div>
-                    </div>
-                )}
+                <div className="flex items-center flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6 lg:space-x-8 mt-8 md:mt-16">
+                    <Link to="/events/categories" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:text-white no-underline text-center">
+                        View All Categories
+                    </Link>
 
-            </div>
+                    <Link to="/events/all" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:text-white no-underline text-center">
+                        View All Events
+                    </Link>                    
+                </div>
+
+            </>
         )
     }
 }

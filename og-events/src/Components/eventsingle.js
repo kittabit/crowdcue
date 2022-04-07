@@ -1,5 +1,7 @@
 import React from 'react';
-import { Link } from "react-router-dom";
+import RelatedEvents from './RelatedEvents';
+import Breadcrumbs from './Breadcrumbs';
+import Loading from './Loading';
 class EventSingle extends React.Component {
 
     constructor (props){
@@ -7,6 +9,8 @@ class EventSingle extends React.Component {
         super(props);
         this.state = {
           event: [],
+          event_dates: [],
+          event_count: [],
           isLoading: 1,
           events_url: "/wp-json/occasiongenius/v1/event/",
           loadingText: "Loading Event Data"
@@ -24,16 +28,12 @@ class EventSingle extends React.Component {
         .then(([res]) => Promise.all([res.json()]))
         .then(([data]) => this.setState({            
             event: data.event,
+            event_dates: data.event.event_dates,
+            event_count: data.event.event_dates_count,
             isLoading: 0
         }));
 
     }
-
-    handleEvent(){
-    
-        console.log(this.props);  
-    
-    }    
 
     render() {
 
@@ -41,56 +41,90 @@ class EventSingle extends React.Component {
             <>
                 {(() => {
                     if (this.state.isLoading) {
+                        document.title = "Loading...";
+                        
                         return (
-                            <div className="occassiongenius-loaded">Loading Event Details...</div>
+                            <Loading />
                         )
                     } else {
+                        if(this.state.event.venue_name){
+                            document.title = this.state.event.name + " - " + this.state.event.venue_name + " (" + this.state.event.venue_city + ", " + this.state.event.venue_state + ")";
+                        }else{
+                            document.title = this.state.event.name;
+                        }
+
                         return (
 
-                            <div className="occasiongenius-single-page" data-popularity={ this.state.event.popularity_score }>
-                                
-                                <Link to="/events/" className="return_to_all_events">&lt; Return to All Events</Link>
+                            <>
+                                <Breadcrumbs page_name={ this.state.event.name } />
 
-                                <div className="occassiongenius-single-page-image" style={{ backgroundImage: `url(${this.state.event.image_url})` }}>
-                                    <img src={this.state.event.image_url} alt={this.state.event.name} />
+                                <div className="container mx-auto" data-popularity={ this.state.event.popularity_score }> 
+                                    <div className="mx-auto">
+                                        <div className="mt-3 md:mt-4 lg:mt-0 flex flex-col lg:flex-row items-strech justify-center lg:space-x-8">
+                                            <div className="lg:w-1/2 flex justify-between items-strech bg-gray-50 bg-cover" style={{ backgroundImage: `url(${this.state.event.image_url})` }}>
+                                                <img src={this.state.event.image_url} alt={this.state.event.name} className="w-full h-full invisible" />
+                                            </div>
+                        
+                                            <div className="lg:w-1/2 flex flex-col justify-center mt-7 md:mt-8 lg:mt-0 pb-8 lg:pb-0">
+                                                <h1 className="text-3xl lg:text-4xl font-semibold text-gray-800">
+                                                    {this.state.event.name}
+                                                </h1>
+                                                <p className="text-base leading-normal text-gray-600 mt-2">
+                                                    { this.state.event.description }
+                                                </p>
+                                                <p className="text-base leading-normal text-gray-600 mt-2 font-semibold">
+                                                    { this.state.event.start_date } 
+                                                    {this.state.event.venue_address_2 &&
+                                                        <>
+                                                            - { this.state.event.end_date }
+                                                        </>
+                                                    }
+                                                </p>
+                                                
+                                                <p className="text-3xl font-medium text-gray-600 mt-8 md:mt-10"></p>
+                            
+                                                <div className="flex items-center flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6 lg:space-x-8 mt-8 md:mt-16">
+                                                    {this.state.event.ticket_url &&
+                                                        <a href={this.state.event.ticket_url} target="_blank" rel="noreferrer" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:text-white no-underline text-center">
+                                                            Get Tickets
+                                                        </a>
+                                                    }
+
+                                                    {this.state.event.source_url &&
+                                                        <a href={this.state.event.source_url} target="_blank" rel="noreferrer" className="block w-full md:w-2/5 border border-gray-800 text-base font-medium leading-none text-gray-800 uppercase py-6 bg-transparent focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-gray-800 hover:bg-gray-800 hover:text-white no-underline text-center">
+                                                            More Information
+                                                        </a>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <h1 className="occassiongenius-single-title" data-uuid={this.props.uuid}>{ this.state.event.name }</h1>
-                                <div className="occassiongenius-single-description">{ this.state.event.description }</div>
-
-                                <div className="occassiongenius-single-times"> 
-                                    <span>
-                                    { this.state.event.start_date } 
-                                    {this.state.event.venue_address_2 &&
-                                        <>
-                                            - { this.state.event.end_date }
-                                        </>
-                                    }
-                                    </span>
-                                </div>
-                                
-                                <div className="occassiongenius-single-venue-information" data-venue_uuid={ this.state.event.venue_uuid }>
-                                    <h4 className="occassiongenius-single-venue-information-title">{ this.state.event.venue_name }</h4>
-                                    <address>
-                                        { this.state.event.venue_address_1 }<br />
-                                        {this.state.event.venue_address_2 &&
-                                            <>
-                                                { this.state.event.venue_address_2 }<br />
-                                            </>
-                                        }
-                                        { this.state.event.venue_city }, { this.state.event.venue_state } { this.state.event.venue_zip } { this.state.event.venue_country }<br />
-                                    </address>
+                                <div className="container mx-auto flex justify-center items-center pt-4 pb-4 border border-solid border-zinc-300 mt-12 bg-slate-100">
+                                    <div className="flex flex-col w-3/4 justify-center items-center">
+                                        
+                                        <h3 className="mt-1 text-2xl font-semibold text-center text-gray-800 text-center md:w-9/12 lg:w-7/12 mb-1 pb-1">
+                                            Venue Information
+                                        </h3>
+                                        <h4 className="mt-1 text-xl font-semibold text-center text-gray-800 text-center md:w-9/12 lg:w-7/12 mb-1 pb-1">
+                                            { this.state.event.venue_name }
+                                        </h4>
+                                        <p className="text-base leading-normal text-center text-gray-600 md:w-9/12 lg:w-7/12 mb-4">
+                                            { this.state.event.venue_address_1 }<br />
+                                            {this.state.event.venue_address_2 &&
+                                                <>
+                                                    { this.state.event.venue_address_2 }<br />
+                                                </>
+                                            }
+                                            { this.state.event.venue_city }, { this.state.event.venue_state } { this.state.event.venue_zip } { this.state.event.venue_country }
+                                        </p>                                        
+                                    </div>
                                 </div>
 
-                                {this.state.event.ticket_url &&
-                                    <a href={ this.state.event.ticket_url } className="occassiongenius-single-venue-get-tickets" rel="noopener noreferrer" target="_blank" title="Get Tickets">
-                                        Get Tickets
-                                    </a>
-                                }
+                                <RelatedEvents />
 
-                                <div className="occassiongenius-single-mapping" data-lat={ this.state.event.latitude } data-long={ this.state.event.longitude }></div>
-                                
-                            </div>
+                            </>
                         )
                     }
                 })()}

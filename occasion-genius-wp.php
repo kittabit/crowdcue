@@ -4,25 +4,10 @@
  * Plugin Name: OccasionGenius
  * Plugin URI: https://occasiongenius.com/
  * Description: OccasionGenius allows you to easily output a beautiful and simple events page without any coding.
- * Version: 0.5.0
+ * Version: 0.6.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
-
-// TODO:  Filters Component
-// TODO:  Search Component
-// TODO:  Browser History
-// TODO:  Allow for dynamic URL versus forced `/events` slugline
-// TODO:  Event Schema (Google)
-// TODO:  Event Sitemap Injection (Yoast)
-// TODO:  API Caching
-// TODO:  Uninstall Cleanup
-// TODO:  Remove Debug `debug_plugin_functions` & Implement Proper Testing
-// TODO:  Show Statistics & Information (Number of events, flags, areas, etc)
-// TODO:  Past Events Cleanup
-// TODO:  Event Details, Show Recurring Timestamps/Dates
-// TODO:  SEO Friendly Title Tags (Single Events)
-// TODO:  Better Pagination (Routing & Page Specific Links)
 
 defined( 'ABSPATH' ) or die( 'Direct Access Not Allowed.' );
 
@@ -32,7 +17,7 @@ use Carbon_Fields\Container;
 use Carbon_Fields\Block;
 use Carbon_Fields\Field;
 
-define( 'Carbon_Fields\URL', $_SERVER['HTTP_X_FORWARDED_PROTO'] . "://" . $_SERVER['HTTP_X_FORWARDED_HOST'] . "/wp-content/plugins/occasion-genius-wp/vendor/htmlburger/carbon-fields" );
+define( 'Carbon_Fields\URL', plugin_dir_url( __FILE__ ) . "vendor/htmlburger/carbon-fields" );
 
 if (!class_exists("OccasionGenius")) {
 
@@ -51,7 +36,7 @@ if (!class_exists("OccasionGenius")) {
 
             $this->OG_WIDGET_PATH = plugin_dir_path( __FILE__ ) . '/og-events';
             $this->OG_ASSET_MANIFEST = $this->OG_WIDGET_PATH . '/build/asset-manifest.json';
-            $this->OG_DB_VERSION = "0.5.0.a";
+            $this->OG_DB_VERSION = "0.6.0";
 
             register_activation_hook( __FILE__, array($this, 'og_install') );
             add_action( 'init', array($this, 'og_pretty_urls') );
@@ -59,7 +44,7 @@ if (!class_exists("OccasionGenius")) {
                 add_filter( 'script_loader_tag', array($this, "script_loader_og_widget_js"), 10, 2);
                 add_action( 'wp_enqueue_scripts', array($this, "enqueue_og_widget_js"));
             endif; 
-            add_shortcode( 'occassiongenius_events', array($this, "shortcode_occassiongenius_events"));
+            add_shortcode( 'occasiongenius_events', array($this, "shortcode_occasiongenius_events"));
             add_action( 'carbon_fields_register_fields', array($this, 'plugin_settings_page_and_blocks') );
             add_action( 'init', array($this, 'register_post_types') );
             add_action( 'after_setup_theme', array($this, 'load_carbon_fields') );
@@ -79,9 +64,16 @@ if (!class_exists("OccasionGenius")) {
                 'methods' => 'GET',
                 'callback' => array($this, 'api_single_response_data'),
                 ));
-            });        
+            });      
+            add_action( 'rest_api_init', function () {
+                register_rest_route( 'occasiongenius/v1', '/flag/(?P<id>\S+)', array(
+                'methods' => 'GET',
+                'callback' => array($this, 'api_category_response_data'),
+                ));
+            });                    
             add_action( 'wp', array($this, 'og_scheduled_tasks') );
             add_action( 'og_sync_events', array($this, 'import_events') );
+            add_action( 'og_purge_events', array($this, 'purge_events') );            
             add_action( 'admin_menu', array($this, 'og_nav_cleanup') );
             add_action( 'admin_notices', array($this, 'og_admin_notice') );
 
@@ -98,6 +90,10 @@ if (!class_exists("OccasionGenius")) {
             if ( !wp_next_scheduled( 'og_sync_events' ) ) {
                 wp_schedule_event(time(), 'hourly', 'og_sync_events');
             }
+
+            if ( !wp_next_scheduled( 'og_purge_events' ) ) {
+                wp_schedule_event(time(), 'hourly', 'og_purge_events');
+            }            
 
         }
 
@@ -291,6 +287,50 @@ if (!class_exists("OccasionGenius")) {
                 "12" => "12"
             );
 
+            $tailwind_colors = array(
+                "slate" => "Slate", 
+                "gray" => "Gray", 
+                "zinc" => "Zinc", 
+                "neutral" => "Neutral", 
+                "stone" => "Stone", 
+                "red" => "Red", 
+                "orange" => "Orange", 
+                "ambed" => "Amber", 
+                "yellow" => "Yellow", 
+                "lime" => "Lime", 
+                "green" => "Green", 
+                "emerald" => "Emerald", 
+                "teal" => "Teal", 
+                "cyan" => "Cyan", 
+                "sky" => "Sky", 
+                "blue" => "Blue", 
+                "indigo" => "Indigo", 
+                "violet" => "Violet", 
+                "purple" => "Purple", 
+                "fuchsia" => "Fuchsia", 
+                "pink" => "Pink", 
+                "rose" => "Rose"
+            );
+
+            $tailwind_color_weights = array(
+                "50" => "50", 
+                "100" => "100", 
+                "200" => "200", 
+                "300" => "300", 
+                "400" => "400", 
+                "500" => "500", 
+                "600" => "600", 
+                "700" => "700", 
+                "800" => "800", 
+                "900" => "900"
+            );
+
+            $tailwind_font_families = array(
+                'font-sans' => "font-sans", 
+                'font-serif' => "font-serif", 
+                'font-mono' => "font-mono"
+            );
+
             $conditional_logic = array(
                 'relation' => 'AND',
                 array(
@@ -298,17 +338,41 @@ if (!class_exists("OccasionGenius")) {
                     'value' => array(''),
                     'compare' => 'NOT IN',
                 )
-            );            
+            );     
+            
+            $advanced_design_info_text = "<p>For more information on colors, backgrounds, fonts, etc - please see the following:</p>
+            <ul>
+                <li><a href='https://tailwindcss.com/docs/customizing-colors' target='_blank'>Colors</a></li>
+                <li><a href='https://tailwindcss.com/docs/font-family' target='_blank'>Font Families</a></li>
+            </ul>";
             
             Container::make( 'theme_options', 'OccasionGenius' )->set_page_parent("options-general.php")->add_fields( array(
-                Field::make( 'separator', 'og_basic_settings', 'Basic Settings' )->set_classes( 'og-admin-heading' ),
+                Field::make( 'separator', 'og_basic_settings', 'Basic Settings & Information' )->set_classes( 'og-admin-heading' ),
                 Field::make( 'text', 'og-token-key', "Token Key"),        
                 Field::make( 'select', 'og-time-format', 'Time Format' )->add_options( $time_formats )->set_default_value('F j, Y, g:i a')->set_width( 50 )->set_conditional_logic( $conditional_logic ),
                 Field::make( 'select', 'og-time-zone', 'Time Zone' )->add_options( $timezones )->set_default_value('US/Eastern')->set_width( 50 )->set_conditional_logic( $conditional_logic ),
                 Field::make( "multiselect", "og-disabled-flags", "Disabled Flags" )->add_options( $flags )->set_width( 50 )->set_conditional_logic( $conditional_logic ),
                 Field::make( "multiselect", "og-disabled-areas", "Disabled Areas" )->add_options( $areas )->set_width( 50 )->set_conditional_logic( $conditional_logic ),
-                Field::make( 'separator', 'og_design_options', 'Design Settings' )->set_classes( 'og-admin-heading' )->set_conditional_logic( $conditional_logic ),
-                Field::make( 'select', 'og-design-per-page-limit', "Events Per Page")->add_options( $grid_options )->set_default_value( "12" )->set_conditional_logic( $conditional_logic ),
+                Field::make( "multiselect", "og-featured-flags", "Featured Flags" )->add_options( $flags )->set_width( 100 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'separator', 'og_design_options', 'Basic Design Settings' )->set_classes( 'og-admin-heading' )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'select', 'og-design-per-page-limit', "Events Per Page (Archive Pages)")->add_options( $grid_options )->set_default_value( "12" )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'separator', 'og_advanced_design_options', 'Advanced Design Settings' )->set_classes( 'og-admin-heading' )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'html', 'og_advanced_design_info' )->set_html( $advanced_design_info_text ),
+                Field::make( 'select', 'og-design-primary-btn-color', 'Primary Button Color' )->add_options( $tailwind_colors )->set_default_value('teal')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'select', 'og-design-primary-btn-weight', 'Primary Button Color Weight' )->add_options( $tailwind_color_weights )->set_default_value('400')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'select', 'og-design-secondary-btn-color', 'Secondary Button Color' )->add_options( $tailwind_colors )->set_default_value('sky')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'select', 'og-design-secondary-btn-weight', 'Secondary Button Color Weight' )->add_options( $tailwind_color_weights )->set_default_value('500')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'select', 'og-design-primary-event-color', 'Primary Event Color' )->add_options( $tailwind_colors )->set_default_value('rose')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'select', 'og-design-primary-event-weight', 'Primary Event Color Weight' )->add_options( $tailwind_color_weights )->set_default_value('700')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'select', 'og-design-primary-font-family', 'Primary Font Family' )->add_options( $tailwind_font_families )->set_default_value('font-sans')->set_width( 50 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'separator', 'og_design_hp_options', 'Events Homepage Settings' )->set_classes( 'og-admin-heading' )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'image', 'og-design-header-image-1', "Events Header Image #1")->set_value_type( 'url' )->set_width( 33 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'image', 'og-design-header-image-2', "Events Header Image #2")->set_value_type( 'url' )->set_width( 33 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'image', 'og-design-header-image-3', "Events Header Image #3")->set_value_type( 'url' )->set_width( 33 )->set_conditional_logic( $conditional_logic ),                
+                Field::make( 'text', 'og-design-heading', "Events Headline")->set_conditional_logic( $conditional_logic ),  
+                Field::make( 'text', 'og-design-subheading', "Events Subheader")->set_conditional_logic( $conditional_logic ), 
+                Field::make( 'text', 'og-design-hp-btn-text', "Call To Action Button Text")->set_width( 50 )->set_conditional_logic( $conditional_logic ),  
+                Field::make( 'text', 'og-design-hp-btn-url', "Call To Action Button URL")->set_width( 50 )->set_conditional_logic( $conditional_logic ),  
                 Field::make( 'separator', 'og_developer_settings', 'Developer Settings' )->set_classes( 'og-admin-heading' ),
                 Field::make( 'text', 'og-developer-security-key', "Developer Security Key")->set_default_value( md5(rand() . "-og-" . time() ))
             ));
@@ -328,7 +392,6 @@ if (!class_exists("OccasionGenius")) {
             wp_enqueue_style( 'occasiongenius-admin-css', plugin_dir_url( __FILE__ ) . '/public/css/admin.css' );
 
         }
-
         
 
         /**
@@ -415,6 +478,26 @@ if (!class_exists("OccasionGenius")) {
 
 
         /**
+        * Allows for Making String Names Plural
+        *
+        * @since 0.6.0
+        */
+        function og_pluralize($singular) {        
+
+            $last_letter = strtolower($singular[strlen($singular)-1]);
+            switch($last_letter) {
+                case 'y':
+                    return substr($singular,0,-1).'ies';
+                case 's':
+                    return $singular.'es';
+                default:
+                    return $singular.'s';
+            }
+
+        }
+
+
+        /**
         * Import Events via API
         *
         * @since 0.1.0
@@ -447,7 +530,7 @@ if (!class_exists("OccasionGenius")) {
             foreach($results->results as $event){
 
                 $event_title = $event->name . " (" . $event->uuid . ")";
-
+                
                 $new_event = array(
                     'post_title' => $event_title, 
                     'post_name' => sanitize_title($event->name),
@@ -455,6 +538,7 @@ if (!class_exists("OccasionGenius")) {
                     'post_status' => 'publish'
                 );
                 $event_local_id = post_exists( $event_title ) or wp_insert_post( $new_event );
+                echo "#" . $event_local_id . " - " . $event_title . "<br />\n";
 
                 carbon_set_post_meta( $event_local_id, 'og-event-name', $event->name );
                 carbon_set_post_meta( $event_local_id, 'og-event-uuid', $event->uuid );
@@ -465,7 +549,6 @@ if (!class_exists("OccasionGenius")) {
                 carbon_set_post_meta( $event_local_id, 'og-event-end-date', $event->end_date );
                 carbon_set_post_meta( $event_local_id, 'og-event-start-date-unix', strtotime($event->start_date) );
                 carbon_set_post_meta( $event_local_id, 'og-event-end-date-unix', strtotime($event->end_date) );
-                carbon_set_post_meta( $event_local_id, 'og-event-event-dates', json_encode($event->event_dates) );
                 carbon_set_post_meta( $event_local_id, 'og-event-source-url', $event->source_url );
                 carbon_set_post_meta( $event_local_id, 'og-event-image-url', $event->image_url );
                 carbon_set_post_meta( $event_local_id, 'og-event-ticket-url', $event->ticket_url );
@@ -486,6 +569,36 @@ if (!class_exists("OccasionGenius")) {
                 $this->import_events($results->next);
             }
 
+        }
+
+
+        /**
+        * Purge Past Events
+        *
+        * @since 0.6.0
+        */
+        function purge_events(){
+
+            $query_args = array(
+                'post_type'=>'og_events',
+                'meta_query' => array(
+                    array(
+                        'key' => 'og-event-start-date-unix',
+                        'value' => time(),
+                        'compare' => '<'
+                    )
+                ),
+                'posts_per_page' => -1,
+            );
+            
+            $query = new WP_Query( $query_args );
+            while($query->have_posts()) :
+                $query->the_post();
+
+                wp_delete_post(get_the_ID(), true);
+            endwhile;
+            wp_reset_query();
+            
         }
 
 
@@ -618,42 +731,79 @@ if (!class_exists("OccasionGenius")) {
             $asset_manifest = json_decode( file_get_contents( $this->OG_ASSET_MANIFEST ), true )['files'];
             
             if ( isset( $asset_manifest[ 'main.css' ] ) ) {
-            wp_enqueue_style( 'occasiongenius', get_site_url() . $asset_manifest[ 'main.css' ] );
+                wp_enqueue_style( 'occasiongenius', plugin_dir_url( __FILE__ ) . $asset_manifest[ 'main.css' ] );
             }
         
-            wp_enqueue_script( 'occasiongenius-main', get_site_url() . $asset_manifest[ 'main.js' ], array(), null, true );
+            wp_enqueue_script( 'occasiongenius-main', plugin_dir_url( __FILE__ ) . $asset_manifest[ 'main.js' ], array(), null, true );
         
             foreach ( $asset_manifest as $key => $value ) {
-            if ( preg_match( '@static/js/(.*)\.chunk\.js@', $key, $matches ) ) {
-                if ( $matches && is_array( $matches ) && count( $matches ) === 2 ) {
-                $name = "occasiongenius-" . preg_replace( '/[^A-Za-z0-9_]/', '-', $matches[1] );
-                wp_enqueue_script( $name, get_site_url() . $value, array( 'occasiongenius-main' ), null, true );
+                if ( preg_match( '@static/js/(.*)\.chunk\.js@', $key, $matches ) ) {
+                    if ( $matches && is_array( $matches ) && count( $matches ) === 2 ) {
+                        $name = "occasiongenius-" . preg_replace( '/[^A-Za-z0-9_]/', '-', $matches[1] );
+                        wp_enqueue_script( $name, plugin_dir_url( __FILE__ ) . $value, array( 'occasiongenius-main' ), null, true );
+                    }
                 }
-            }
         
-            if ( preg_match( '@static/css/(.*)\.chunk\.css@', $key, $matches ) ) {
-                if ( $matches && is_array( $matches ) && count( $matches ) == 2 ) {
-                $name = "occasiongenius-" . preg_replace( '/[^A-Za-z0-9_]/', '-', $matches[1] );
-                wp_enqueue_style( $name, get_site_url() . $value, array( 'occasiongenius' ), null );
+                if ( preg_match( '@static/css/(.*)\.chunk\.css@', $key, $matches ) ) {
+                    if ( $matches && is_array( $matches ) && count( $matches ) == 2 ) {
+                        $name = "occasiongenius-" . preg_replace( '/[^A-Za-z0-9_]/', '-', $matches[1] );
+                        wp_enqueue_style( $name, plugin_dir_url( __FILE__ ) . $value, array( 'occasiongenius' ), null );
+                    }
                 }
-            }
             }
 
         }
 
 
         /**
-        * [occassiongenius_events] Shortcode Output
+        * [occasiongenius_events] Shortcode Output
         *
         * @since 0.1.0
         */
-        function shortcode_occassiongenius_events( $atts ){
+        function shortcode_occasiongenius_events( $atts ){
 
             $default_atts = array();
             $args = shortcode_atts( $default_atts, $atts );
 
             ob_start();
+
+            $og_design_primary_btn_color = carbon_get_theme_option( 'og-design-primary-btn-color' );
+            $og_design_primary_btn_weight = carbon_get_theme_option( 'og-design-primary-btn-weight' );
+            $og_design_secondary_btn_color = carbon_get_theme_option( 'og-design-secondary-btn-color' );
+            $og_design_secondary_btn_weight = carbon_get_theme_option( 'og-design-secondary-btn-weight' );
+            $og_design_primary_event_color = carbon_get_theme_option( 'og-design-primary-event-color' );
+            $og_design_primary_event_weight = carbon_get_theme_option( 'og-design-primary-event-weight' );
+            $og_design_primary_font_family = carbon_get_theme_option( 'og-design-primary-font-family' );
+            $og_design_image_1 = carbon_get_theme_option( 'og-design-header-image-1' );
+            $og_design_image_2 = carbon_get_theme_option( 'og-design-header-image-2' );
+            $og_design_image_3 = carbon_get_theme_option( 'og-design-header-image-3' );
+            $og_heading = carbon_get_theme_option( 'og-design-heading' );
+            $og_subheading = carbon_get_theme_option( 'og-design-subheading' );
+            $og_featured_flags = json_encode(carbon_get_theme_option( 'og-featured-flags' ));            
+            $og_hp_btn_text = carbon_get_theme_option( 'og-design-hp-btn-text' );
+            $og_hp_btn_url = carbon_get_theme_option( 'og-design-hp-btn-url' );
             ?>
+            <script>
+            window.ogSettings = window.ogSettings || {};
+            window.ogSettings = {
+                'og_base_url': '<?php echo esc_js(plugin_dir_url( __FILE__ )); ?>',
+                'og_design_primary_btn_color': '<?php echo esc_js($og_design_primary_btn_color); ?>',
+                'og_design_primary_btn_weight': '<?php echo esc_js($og_design_primary_btn_weight); ?>',
+                'og_design_secondary_btn_color': '<?php echo esc_js($og_design_secondary_btn_color); ?>',
+                'og_design_secondary_btn_weight': '<?php echo esc_js($og_design_secondary_btn_weight); ?>',
+                'og_design_primary_event_color': '<?php echo esc_js($og_design_primary_event_color); ?>',
+                'og_design_primary_event_weight': '<?php echo esc_js($og_design_primary_event_weight); ?>',
+                'og_design_primary_font_family': '<?php echo esc_js($og_design_primary_font_family); ?>',
+                'og_design_image_1': '<?php echo esc_js($og_design_image_1); ?>',
+                'og_design_image_2': '<?php echo esc_js($og_design_image_2); ?>',
+                'og_design_image_3': '<?php echo esc_js($og_design_image_3); ?>',
+                'og_heading': '<?php echo esc_js($og_heading); ?>',
+                'og_subheading': '<?php echo esc_js($og_subheading); ?>',
+                'og_hp_btn_text': '<?php echo esc_js($og_hp_btn_text); ?>',
+                'og_hp_btn_url': '<?php echo esc_js($og_hp_btn_url); ?>',
+                'og_featured_flags': '<?php echo esc_js($og_featured_flags); ?>'
+            }
+            </script>            
             <div id="App" class="og-root"></div>
             <?php
             return ob_get_clean();
@@ -670,9 +820,9 @@ if (!class_exists("OccasionGenius")) {
 
             Block::make( __( 'OccasionGenius Events' ) )->set_mode("preview")->set_render_callback( function ( $fields, $attributes, $inner_blocks ) {
                 if (strpos($_SERVER['REQUEST_URI'],'carbon-fields') !== false):
-                    echo "[Events Container]";
+                    echo "Notice:  OccasionGenius block only visible on the front end.";
                 else:
-                    echo do_shortcode("[occassiongenius_events]");
+                    echo do_shortcode("[occasiongenius_events]");
                 endif;
             } );        
             
@@ -688,6 +838,9 @@ if (!class_exists("OccasionGenius")) {
 
             extract($_GET);
             
+            $flags = $this->og_api_flags();
+            $areas = $this->og_api_areas();
+
             if(!$page):
                 $page = 1;
             endif;
@@ -708,8 +861,11 @@ if (!class_exists("OccasionGenius")) {
 
             date_default_timezone_set($og_time_zone);
 
+            $disabled_flags = carbon_get_theme_option( 'og-disabled-flags' );
+            $disabled_areas = carbon_get_theme_option( 'og-disabled-areas' );
+
             $events = array();
-            $query = new WP_Query( array(
+            $query_args = array(
                 'post_type'=>'og_events',
                 'orderby' => 'order_clause',
                 'meta_query' => array(
@@ -726,7 +882,29 @@ if (!class_exists("OccasionGenius")) {
                 'order' => 'asc',
                 'posts_per_page' => $limit,
                 'paged' => $page,
-            ) );
+            );
+
+            if(count($disabled_flags) > 0 && is_array($disabled_flags)):
+                foreach($disabled_flags as $df):
+                    $query_args['meta_query'][] = array(
+                        'key' => 'og-event-flags',
+                        'value' => $flags[$df],
+                        'compare' => 'NOT IN'                        
+                    );
+                endforeach;
+            endif;
+
+            if(count($disabled_areas) > 0 && is_array($disabled_areas)):
+                foreach($disabled_areas as $da):
+                    $query_args['meta_query'][] = array(
+                        'key' => 'og-event-venue-city',
+                        'value' => $areas[$da],
+                        'compare' => 'NOT IN'                        
+                    );
+                endforeach;
+            endif;
+
+            $query = new WP_Query( $query_args );
 
             $events['info'] = array(
                 "limit" => $limit,
@@ -746,14 +924,13 @@ if (!class_exists("OccasionGenius")) {
                     "uuid" => carbon_get_the_post_meta( 'og-event-uuid' ),
                     "popularity_score" => carbon_get_the_post_meta( 'og-event-popularity-score' ),
                     "description" => carbon_get_the_post_meta( 'og-event-description' ),
-                    "flags" => carbon_get_the_post_meta( 'og-event-flags' ),
+                    "flags" => json_decode(carbon_get_the_post_meta( 'og-event-flags' )),
                     "start_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
                     "start_date_month" => date("M", strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
                     "start_date_day" => date("j", strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
                     "end_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' ))),
                     "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
                     "end_date_unix" => carbon_get_the_post_meta( 'og-event-end-date-unix' ),
-                    "event_dates" => carbon_get_the_post_meta( 'og-event-event-dates' ),
                     "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
                     "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
                     "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
@@ -806,22 +983,30 @@ if (!class_exists("OccasionGenius")) {
                 $end_date_unix = "";
             endif;
 
+            $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+            $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+
+			$og_output_date = date('m/d/y g:i a', $og_output_start);
+			if( (date('m/d/y', $og_output_start) != date('m/d/y', $og_output_end)) && (date('m/d/y', $og_output_end) != "01/01/70")){
+				$og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $og_output_end);
+			}
+
             $event_details = array();
             while($query->have_posts()) :
                 $query->the_post();
-
+    
                 $event_details["event"] = array(
                     "id" => get_the_ID(),
                     "name" => carbon_get_the_post_meta( 'og-event-name' ),
                     "uuid" => carbon_get_the_post_meta( 'og-event-uuid' ),
                     "popularity_score" => carbon_get_the_post_meta( 'og-event-popularity-score' ),
                     "description" => carbon_get_the_post_meta( 'og-event-description' ),
-                    "flags" => carbon_get_the_post_meta( 'og-event-flags' ),
+                    "flags" => json_decode(carbon_get_the_post_meta( 'og-event-flags' )),
                     "start_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
                     "end_date" => $end_date,
                     "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
                     "end_date_unix" => $end_date_unix,
-                    "event_dates" => carbon_get_the_post_meta( 'og-event-event-dates' ),
+                    "date_formatted" => $og_output_date,
                     "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
                     "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
                     "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
@@ -840,6 +1025,106 @@ if (!class_exists("OccasionGenius")) {
 
             wp_reset_query();
             return $event_details;
+
+        }
+
+        
+        /**
+        * API Single Category/Flag Response (JSON Data)
+        *
+        * @since 0.6.0
+        */
+        function api_category_response_data( $data ){
+
+            $flags = $this->og_api_flags();
+            
+            $flag_id = $data['id'];
+            $flag_name = strtolower($flags[$flag_id]);
+            $flag_output = $this->og_pluralize(ucwords(str_replace("_", " ", $flag_name)));
+
+            $response = array(); $events = array();
+            $response['data'] = array(
+                "ID" => $flag_id,
+                "Name" => $flag_name,
+                "Output" => $flag_output
+            );
+
+            $query_args = array(
+                'post_type'=>'og_events',
+                //'orderby' => 'order_clause',
+                'meta_query' => array(
+                    // 'order_clause' => array(
+                    //     'key' => 'popularity_score',
+                    //     'type' => 'NUMERIC' 
+                    // ),
+                    array(
+                        'key' => 'og-event-start-date-unix',
+                        'value' => time(),
+                        'compare' => '>='
+                    ),
+                    array(
+                        'key' => 'og-event-flags',
+                        'value' => '"' . $flag_name . '"',
+                        'compare' => 'LIKE'                        
+                    )                    
+                ),
+                'order' => 'asc',
+                'posts_per_page' => 4
+            );
+            $query = new WP_Query($query_args);
+
+            $og_time_format = carbon_get_theme_option( 'og-time-format' );
+            if(!$og_time_format): $og_time_format = "F j, Y, g:i a"; endif;
+
+            $og_time_zone = carbon_get_theme_option( 'og-time-zone' );
+            if(!$og_time_zone): $og_time_zone = "US/Eastern"; endif;
+
+            date_default_timezone_set($og_time_zone);
+            while($query->have_posts()) :
+                $query->the_post();
+
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+    
+                $og_output_date = date('m/d/y g:i a', $og_output_start);
+                // TODO:  FIX DATE COMPARE
+                if( (date('m/d/y', $og_output_start) != date('m/d/y', $og_output_end)) && (date('m/d/y', $og_output_end) != "01/01/70" && date('m/d/y', $og_output_end) != "12/31/69")){
+                    $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $og_output_end);
+                }
+
+                $events[] = array(
+                    "id" => get_the_ID(),
+                    "slug" => get_post_field( 'post_name' ),
+                    "name" => carbon_get_the_post_meta( 'og-event-name' ),
+                    "uuid" => carbon_get_the_post_meta( 'og-event-uuid' ),
+                    "popularity_score" => carbon_get_the_post_meta( 'og-event-popularity-score' ),
+                    "description" => carbon_get_the_post_meta( 'og-event-description' ),
+                    "flags" => json_decode(carbon_get_the_post_meta( 'og-event-flags' )),
+                    "start_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
+                    "end_date" => $end_date,
+                    "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
+                    "end_date_unix" => $end_date_unix,
+                    "date_formatted" => $og_output_date,
+                    "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
+                    "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
+                    "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
+                    "venue_name" => carbon_get_the_post_meta( 'og-event-venue-name' ),
+                    "venue_uuid" => carbon_get_the_post_meta( 'og-event-venue-uuid' ),
+                    "venue_address_1" => carbon_get_the_post_meta( 'og-event-venue-address-1' ),
+                    "venue_address_2" => carbon_get_the_post_meta( 'og-event-venue-address-2' ),
+                    "venue_city" => carbon_get_the_post_meta( 'og-event-venue-city' ),
+                    "venue_state" => carbon_get_the_post_meta( 'og-event-venue-state' ),
+                    "venue_zip" => carbon_get_the_post_meta( 'og-event-venue-zip-code' ),
+                    "venue_country" => carbon_get_the_post_meta( 'og-event-venue-country' ),
+                    "latitude" => carbon_get_the_post_meta( 'og-event-venue-latitude' ),
+                    "longitude" => carbon_get_the_post_meta( 'og-event-venue-longitude' )
+                );
+                
+            endwhile;
+            wp_reset_query();
+
+            $response['events'] = $events;
+            return $response;
 
         }
 
@@ -889,6 +1174,8 @@ if (!class_exists("OccasionGenius")) {
                 elseif($_GET['occasiongenius_action'] == "areas"):
                     $areas = $this->og_api_areas();
                     print_r($areas);            
+                elseif($_GET['occasiongenius_action'] == "purge"):
+                    $this->purge_events();
                 endif;
             endif;
 
