@@ -1,6 +1,6 @@
 {
   "name": "og-events",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "homepage": "og-events/build",
   "dependencies": {

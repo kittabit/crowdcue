@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from "react-router-dom";
 
 class Header extends React.Component {
     
@@ -23,7 +22,7 @@ class Header extends React.Component {
                                 <div className="flex flex-row-reverse flex-wrap justify-center gap-4 md:gap-6 md:justify-end">
                                     
                                         <a href={window.ogSettings.og_hp_btn_url}>
-                                            <button type="button" title={window.ogSettings.og_hp_btn_text} className="w-full pt-3 pb-2 px-6 text-center rounded-xl transition bg-teal-300 shadow-xl hover:bg-teal-500 active:bg-teal-500 focus:bg-teal-500 sm:w-max">
+                                            <button type="button" title={window.ogSettings.og_hp_btn_text} className="w-full pt-3 pb-2 px-6 text-center rounded-xl transition bg-gray-800 shadow-xl hover:bg-gray-600 sm:w-max">
                                                 <span className="block text-white font-semibold pt-px pb-px">
                                                     {window.ogSettings.og_hp_btn_text}
                                                 </span>

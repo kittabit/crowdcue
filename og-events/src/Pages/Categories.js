@@ -1,6 +1,7 @@
-import React, { Component } from 'react'
+import React, { Component } from 'react';
+import { Link } from "react-router-dom";
 import Breadcrumbs from '../Components/Breadcrumbs';
-import '../index.css';
+import Loading from '../Components/Loading';
 
 class Categories extends Component {
 
@@ -8,33 +9,24 @@ class Categories extends Component {
 
         super(props);
         this.state = {
-
+            categories: [],
+            isLoading: 1,
         }
         
     }
     
     componentDidMount() {
 
-        // Promise.all([
-        //   fetch('/wp-json/occasiongenius/v1/events'),
-        // ])
-        // .then(([res1]) => Promise.all([res1.json()]))
-        // .then(([data1]) => this.setState({
-        //   events: data1.events,
-        //   current_page: data1.info.current_page, 
-        //   next_page: data1.info.next_page, 
-        //   max_pages: data1.info.max_pages, 
-        //   isLoading: 0
-        // }));
+        Promise.all([
+          fetch('/wp-json/occasiongenius/v1/flags'),
+        ])
+        .then(([res]) => Promise.all([res.json()]))
+        .then(([data]) => this.setState({
+          categories: data,
+          isLoading: 0
+        }));
 
-        // if(this.props.number){
-        //   this.nextPage();
-        //   this.setState({
-        //     current_page: this.props.number
-        //   });
-        // }
-
-        // document.title = "Local Events";
+        document.title = "Local Event Categories";
 
     } 
     
@@ -45,14 +37,35 @@ class Categories extends Component {
     }         
 
     render(){
-
+        console.table(this.state.categories);
 
         return (
             <>
 
                 <Breadcrumbs page_name="All Categories" />
+                
+                {this.state.isLoading ? (
+                    <Loading />
+                ) : (
+                    <div class="flex w-full">
+                        <ul className="w-full">
+                            {this.state.categories.map((item, index) => (
+                            <>
+                                <li className="block px-6 py-2 border-b border-gray-200 w-full hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-0 focus:bg-gray-200 focus:text-gray-600 transition duration-500 cursor-pointer" key={index}>
+                                    <Link to={`/events/category/${ item.slug }`} className="no-underline text-gray-800">
+                                        { item.output }
 
-                [categories_go_here]
+                                        <span className="inline-flex items-center justify-center px-2 py-1 mr-2 text-xs font-bold leading-none text-red-100 bg-gray-800 rounded-full inline-block float-right">
+                                            { item.total }
+                                        </span>
+
+                                    </Link>
+                                </li>
+                            </>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
             </>
         )

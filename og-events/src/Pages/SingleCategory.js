@@ -1,19 +1,19 @@
 import React from 'react';
 import { useParams } from "react-router";
-import EventSingle from '../Components/EventSingle';
+import CategoryOutput from '../Components/CategoryOutput';
 
-function EventDetails() {
+function SingleCategory() {
 
     const { slug } = useParams();
 
     return (
         <>  
     
-            <EventSingle uuid={slug} />
+            <CategoryOutput slug={slug} />
 
         </>
     );
     
 }
 
-export default EventDetails;
+export default SingleCategory;

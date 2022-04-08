@@ -2,7 +2,6 @@ import React, { Component } from 'react'
 import { Link } from "react-router-dom";
 import Header from '../Components/Header';
 import EventCategorySmall from '../Components/EventCategorySmall';
-import '../index.css';
 
 class Home extends Component {
 
@@ -33,11 +32,11 @@ class Home extends Component {
                 ))}
 
                 <div className="flex items-center flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6 lg:space-x-8 mt-8 md:mt-16">
-                    <Link to="/events/categories" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:text-white no-underline text-center">
+                    <Link to="/events/categories" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:bg-gray-600 hover:text-white no-underline text-center">
                         View All Categories
                     </Link>
 
-                    <Link to="/events/all" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:text-white no-underline text-center">
+                    <Link to="/events/all" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:bg-gray-600 hover:text-white no-underline text-center">
                         View All Events
                     </Link>                    
                 </div>

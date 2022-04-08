@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import { Link } from "react-router-dom";
-import Loading from "../Components/Loading"
-import Breadcrumbs from "../Components/Breadcrumbs"
+import Breadcrumbs from './Breadcrumbs';
+import Loading from './Loading';
 
-class Events extends Component {
+class VenueOutput extends Component {
 
     constructor (props){
 
@@ -12,8 +12,9 @@ class Events extends Component {
             current_page: [],
             next_page: [],
             max_pages: [],
-            events: [],
-            events_url: '/wp-json/occasiongenius/v1/events?page=',
+            venue_data: [],
+            venue_events: [],
+            events_url: '/wp-json/occasiongenius/v1/venue/' + this.props.uuid,
             isLoading: 1,
         }
         
@@ -22,18 +23,19 @@ class Events extends Component {
     componentDidMount() {
 
         Promise.all([
-          fetch('/wp-json/occasiongenius/v1/events'),
+          fetch('/wp-json/occasiongenius/v1/venue/' + this.props.uuid),
         ])
         .then(([res]) => Promise.all([res.json()]))
-        .then(([cat_data]) => this.setState({
-          events: cat_data.events,
-          current_page: cat_data.info.current_page, 
-          next_page: cat_data.info.next_page, 
-          max_pages: cat_data.info.max_pages, 
+        .then(([data]) => this.setState({
+          venue_data: data.data,
+          venue_events: data.events,
+          current_page: data.info.current_page, 
+          next_page: data.info.next_page, 
+          max_pages: data.info.max_pages, 
           isLoading: 0
         }));
 
-        document.title = "All Local Events";
+        //document.title = "Local Event Categories";
 
     } 
 
@@ -43,7 +45,7 @@ class Events extends Component {
           .then((r) => r.json())
           .then((result) => {
             this.setState({
-                events: result.events,
+                venue_events: result.events,
                 isLoading: 0
             });
           })
@@ -60,7 +62,7 @@ class Events extends Component {
             isLoading: 1
           },
           () => {
-            const events_url = this.state.events_url + this.state.current_page;
+            const events_url = this.state.events_url + "?page=" + this.state.current_page;
             this.fetchData(events_url);
             window.scrollTo({
               top: 0,
@@ -78,7 +80,7 @@ class Events extends Component {
             isLoading: 1
           },
           () => {
-            const events_url = this.state.events_url + this.state.current_page;
+            const events_url = this.state.events_url + "?page=" + this.state.current_page;
             this.fetchData(events_url);
             window.scrollTo({
               top: 0,
@@ -96,7 +98,7 @@ class Events extends Component {
         return (
             <>
 
-                <Breadcrumbs parent_title="All Categories" parent_url="/events/categories/" page_name="All Local Events" />
+                <Breadcrumbs parent_title="All Events" parent_url="/events/all/" page_name={ this.state.venue_data.venue_name} />
                 
                 <div className="flex items-center justify-center bg-white mb-16">                          
                     <div className="grid grid-cols-12 px-18 gap-5">
@@ -108,12 +110,12 @@ class Events extends Component {
                                 <div className="col-span-12">
                                     <div className="flow-root">
                                         <p className="float-left text-gray-800 text-3xl font-semibold mb-0">
-                                            All Local Events
+                                            { this.state.venue_data.venue_name }
                                         </p>
                                     </div>
                                 </div>
 
-                                {this.state.events.map((item, index) => (   
+                                {this.state.venue_events.map((item, index) => (   
                                     <div className="col-span-3 bg-rose-700 rounded-xl h-52 md:h-80 no-underline" key={index}>
                                         <Link to={`/events/details/${ item.slug }`} className="no-underline">
                                             <img src={ item.image_url } alt={ item.name } className="rounded-t-xl max-h-44" />
@@ -127,8 +129,9 @@ class Events extends Component {
                                     </div>
                                 ))}
                             </>
-                        )}        
-                    </div> 
+                        )}  
+
+                    </div>
                 </div>
 
                 <div className="flex items-center flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6 lg:space-x-8 mt-8 md:mt-16">
@@ -154,4 +157,4 @@ class Events extends Component {
     }
 }
 
-export default Events
+export default VenueOutput
