@@ -4,7 +4,7 @@
  * Plugin Name: OccasionGenius
  * Plugin URI: https://occasiongenius.com/
  * Description: OccasionGenius allows you to easily output a beautiful and simple events page without any coding.
- * Version: 0.6.0
+ * Version: 0.7.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
@@ -36,7 +36,7 @@ if (!class_exists("OccasionGenius")) {
 
             $this->OG_WIDGET_PATH = plugin_dir_path( __FILE__ ) . '/og-events';
             $this->OG_ASSET_MANIFEST = $this->OG_WIDGET_PATH . '/build/asset-manifest.json';
-            $this->OG_DB_VERSION = "0.6.0";
+            $this->OG_DB_VERSION = "0.7.0";
 
             register_activation_hook( __FILE__, array($this, 'og_install') );
             add_action( 'init', array($this, 'og_pretty_urls') );
@@ -55,22 +55,41 @@ if (!class_exists("OccasionGenius")) {
 
             add_action( 'rest_api_init', function () {
                 register_rest_route( 'occasiongenius/v1', '/events', array(
-                'methods' => 'GET',
-                'callback' => array($this, 'api_response_data'),
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_response_data'),
                 ));
             });
             add_action( 'rest_api_init', function () {
                 register_rest_route( 'occasiongenius/v1', '/event/(?P<slug>\S+)', array(
-                'methods' => 'GET',
-                'callback' => array($this, 'api_single_response_data'),
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_single_response_data'),
                 ));
             });      
             add_action( 'rest_api_init', function () {
                 register_rest_route( 'occasiongenius/v1', '/flag/(?P<id>\S+)', array(
-                'methods' => 'GET',
-                'callback' => array($this, 'api_category_response_data'),
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_category_response_data'),
                 ));
-            });                    
+            });     
+            add_action( 'rest_api_init', function () {
+                register_rest_route( 'occasiongenius/v1', '/flags', array(
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_category_list_response_data'),
+                ));
+            });     
+            add_action( 'rest_api_init', function () {
+                register_rest_route( 'occasiongenius/v1', '/venue/(?P<uuid>\S+)', array(
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_venue_list_response_data'),
+                ));
+            });  
+            add_action( 'rest_api_init', function () {
+                register_rest_route( 'occasiongenius/v1', '/suggested/(?P<id>\S+)', array(
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_related_and_suggested_response_data'),
+                ));
+            });              
+            
             add_action( 'wp', array($this, 'og_scheduled_tasks') );
             add_action( 'og_sync_events', array($this, 'import_events') );
             add_action( 'og_purge_events', array($this, 'purge_events') );            
@@ -287,50 +306,6 @@ if (!class_exists("OccasionGenius")) {
                 "12" => "12"
             );
 
-            $tailwind_colors = array(
-                "slate" => "Slate", 
-                "gray" => "Gray", 
-                "zinc" => "Zinc", 
-                "neutral" => "Neutral", 
-                "stone" => "Stone", 
-                "red" => "Red", 
-                "orange" => "Orange", 
-                "ambed" => "Amber", 
-                "yellow" => "Yellow", 
-                "lime" => "Lime", 
-                "green" => "Green", 
-                "emerald" => "Emerald", 
-                "teal" => "Teal", 
-                "cyan" => "Cyan", 
-                "sky" => "Sky", 
-                "blue" => "Blue", 
-                "indigo" => "Indigo", 
-                "violet" => "Violet", 
-                "purple" => "Purple", 
-                "fuchsia" => "Fuchsia", 
-                "pink" => "Pink", 
-                "rose" => "Rose"
-            );
-
-            $tailwind_color_weights = array(
-                "50" => "50", 
-                "100" => "100", 
-                "200" => "200", 
-                "300" => "300", 
-                "400" => "400", 
-                "500" => "500", 
-                "600" => "600", 
-                "700" => "700", 
-                "800" => "800", 
-                "900" => "900"
-            );
-
-            $tailwind_font_families = array(
-                'font-sans' => "font-sans", 
-                'font-serif' => "font-serif", 
-                'font-mono' => "font-mono"
-            );
-
             $conditional_logic = array(
                 'relation' => 'AND',
                 array(
@@ -339,12 +314,6 @@ if (!class_exists("OccasionGenius")) {
                     'compare' => 'NOT IN',
                 )
             );     
-            
-            $advanced_design_info_text = "<p>For more information on colors, backgrounds, fonts, etc - please see the following:</p>
-            <ul>
-                <li><a href='https://tailwindcss.com/docs/customizing-colors' target='_blank'>Colors</a></li>
-                <li><a href='https://tailwindcss.com/docs/font-family' target='_blank'>Font Families</a></li>
-            </ul>";
             
             Container::make( 'theme_options', 'OccasionGenius' )->set_page_parent("options-general.php")->add_fields( array(
                 Field::make( 'separator', 'og_basic_settings', 'Basic Settings & Information' )->set_classes( 'og-admin-heading' ),
@@ -356,15 +325,6 @@ if (!class_exists("OccasionGenius")) {
                 Field::make( "multiselect", "og-featured-flags", "Featured Flags" )->add_options( $flags )->set_width( 100 )->set_conditional_logic( $conditional_logic ),
                 Field::make( 'separator', 'og_design_options', 'Basic Design Settings' )->set_classes( 'og-admin-heading' )->set_conditional_logic( $conditional_logic ),
                 Field::make( 'select', 'og-design-per-page-limit', "Events Per Page (Archive Pages)")->add_options( $grid_options )->set_default_value( "12" )->set_conditional_logic( $conditional_logic ),
-                Field::make( 'separator', 'og_advanced_design_options', 'Advanced Design Settings' )->set_classes( 'og-admin-heading' )->set_conditional_logic( $conditional_logic ),
-                Field::make( 'html', 'og_advanced_design_info' )->set_html( $advanced_design_info_text ),
-                Field::make( 'select', 'og-design-primary-btn-color', 'Primary Button Color' )->add_options( $tailwind_colors )->set_default_value('teal')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
-                Field::make( 'select', 'og-design-primary-btn-weight', 'Primary Button Color Weight' )->add_options( $tailwind_color_weights )->set_default_value('400')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
-                Field::make( 'select', 'og-design-secondary-btn-color', 'Secondary Button Color' )->add_options( $tailwind_colors )->set_default_value('sky')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
-                Field::make( 'select', 'og-design-secondary-btn-weight', 'Secondary Button Color Weight' )->add_options( $tailwind_color_weights )->set_default_value('500')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
-                Field::make( 'select', 'og-design-primary-event-color', 'Primary Event Color' )->add_options( $tailwind_colors )->set_default_value('rose')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
-                Field::make( 'select', 'og-design-primary-event-weight', 'Primary Event Color Weight' )->add_options( $tailwind_color_weights )->set_default_value('700')->set_width( 25 )->set_conditional_logic( $conditional_logic ),
-                Field::make( 'select', 'og-design-primary-font-family', 'Primary Font Family' )->add_options( $tailwind_font_families )->set_default_value('font-sans')->set_width( 50 )->set_conditional_logic( $conditional_logic ),
                 Field::make( 'separator', 'og_design_hp_options', 'Events Homepage Settings' )->set_classes( 'og-admin-heading' )->set_conditional_logic( $conditional_logic ),
                 Field::make( 'image', 'og-design-header-image-1', "Events Header Image #1")->set_value_type( 'url' )->set_width( 33 )->set_conditional_logic( $conditional_logic ),
                 Field::make( 'image', 'og-design-header-image-2', "Events Header Image #2")->set_value_type( 'url' )->set_width( 33 )->set_conditional_logic( $conditional_logic ),
@@ -767,13 +727,6 @@ if (!class_exists("OccasionGenius")) {
 
             ob_start();
 
-            $og_design_primary_btn_color = carbon_get_theme_option( 'og-design-primary-btn-color' );
-            $og_design_primary_btn_weight = carbon_get_theme_option( 'og-design-primary-btn-weight' );
-            $og_design_secondary_btn_color = carbon_get_theme_option( 'og-design-secondary-btn-color' );
-            $og_design_secondary_btn_weight = carbon_get_theme_option( 'og-design-secondary-btn-weight' );
-            $og_design_primary_event_color = carbon_get_theme_option( 'og-design-primary-event-color' );
-            $og_design_primary_event_weight = carbon_get_theme_option( 'og-design-primary-event-weight' );
-            $og_design_primary_font_family = carbon_get_theme_option( 'og-design-primary-font-family' );
             $og_design_image_1 = carbon_get_theme_option( 'og-design-header-image-1' );
             $og_design_image_2 = carbon_get_theme_option( 'og-design-header-image-2' );
             $og_design_image_3 = carbon_get_theme_option( 'og-design-header-image-3' );
@@ -787,13 +740,6 @@ if (!class_exists("OccasionGenius")) {
             window.ogSettings = window.ogSettings || {};
             window.ogSettings = {
                 'og_base_url': '<?php echo esc_js(plugin_dir_url( __FILE__ )); ?>',
-                'og_design_primary_btn_color': '<?php echo esc_js($og_design_primary_btn_color); ?>',
-                'og_design_primary_btn_weight': '<?php echo esc_js($og_design_primary_btn_weight); ?>',
-                'og_design_secondary_btn_color': '<?php echo esc_js($og_design_secondary_btn_color); ?>',
-                'og_design_secondary_btn_weight': '<?php echo esc_js($og_design_secondary_btn_weight); ?>',
-                'og_design_primary_event_color': '<?php echo esc_js($og_design_primary_event_color); ?>',
-                'og_design_primary_event_weight': '<?php echo esc_js($og_design_primary_event_weight); ?>',
-                'og_design_primary_font_family': '<?php echo esc_js($og_design_primary_font_family); ?>',
                 'og_design_image_1': '<?php echo esc_js($og_design_image_1); ?>',
                 'og_design_image_2': '<?php echo esc_js($og_design_image_2); ?>',
                 'og_design_image_3': '<?php echo esc_js($og_design_image_3); ?>',
@@ -917,6 +863,14 @@ if (!class_exists("OccasionGenius")) {
                 $query->the_post();
                 $post_details = get_post(get_the_ID()); 
 
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+    
+                $og_output_date = date('m/d/y g:i a', $og_output_start);
+                if( (date('m/d/y', $og_output_start) != date('m/d/y', $og_output_end)) && (date('m/d/y', $og_output_end) != "01/01/70" && date('m/d/y', $og_output_end) != "12/31/69")){
+                    $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $og_output_end);
+                }
+
                 $events['events'][] = array(
                     "id" => get_the_ID(),
                     "slug" => $post_details->post_name,
@@ -929,6 +883,7 @@ if (!class_exists("OccasionGenius")) {
                     "start_date_month" => date("M", strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
                     "start_date_day" => date("j", strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
                     "end_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' ))),
+                    "date_formatted" => $og_output_date,
                     "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
                     "end_date_unix" => carbon_get_the_post_meta( 'og-event-end-date-unix' ),
                     "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
@@ -1036,11 +991,30 @@ if (!class_exists("OccasionGenius")) {
         */
         function api_category_response_data( $data ){
 
+            extract($_GET);
+
             $flags = $this->og_api_flags();
             
             $flag_id = $data['id'];
+            if(!is_numeric($flag_id)):
+                $flag_id = array_search($flag_id, $flags);
+            endif;
+
             $flag_name = strtolower($flags[$flag_id]);
             $flag_output = $this->og_pluralize(ucwords(str_replace("_", " ", $flag_name)));
+
+            if(!$page):
+                $page = 1;
+            endif;
+
+            if(!$limit):
+                if( carbon_get_theme_option("og-design-per-page-limit") ):
+                    $limit = carbon_get_theme_option("og-design-per-page-limit");
+                else:
+                    $limit = 24;
+                endif;
+            endif;        
+
 
             $response = array(); $events = array();
             $response['data'] = array(
@@ -1051,12 +1025,7 @@ if (!class_exists("OccasionGenius")) {
 
             $query_args = array(
                 'post_type'=>'og_events',
-                //'orderby' => 'order_clause',
                 'meta_query' => array(
-                    // 'order_clause' => array(
-                    //     'key' => 'popularity_score',
-                    //     'type' => 'NUMERIC' 
-                    // ),
                     array(
                         'key' => 'og-event-start-date-unix',
                         'value' => time(),
@@ -1069,9 +1038,18 @@ if (!class_exists("OccasionGenius")) {
                     )                    
                 ),
                 'order' => 'asc',
-                'posts_per_page' => 4
+                'posts_per_page' => $limit,
+                'paged' => $page,
             );
             $query = new WP_Query($query_args);
+
+            $response['info'] = array(
+                "limit" => $limit,
+                "current_page" => $page,            
+                "next_page" => $page + 1,
+                "max_pages" => $query->max_num_pages,
+                "total" => $query->post_count
+            );
 
             $og_time_format = carbon_get_theme_option( 'og-time-format' );
             if(!$og_time_format): $og_time_format = "F j, Y, g:i a"; endif;
@@ -1124,6 +1102,306 @@ if (!class_exists("OccasionGenius")) {
             wp_reset_query();
 
             $response['events'] = $events;
+            return $response;
+
+        }
+
+
+        /**
+        * API Flags/Categoryes Response (JSON Data)
+        *
+        * @since 0.7.0
+        */
+        function api_category_list_response_data( $data ){
+
+            $flags = $this->og_api_flags(); $response = array();
+            foreach($flags as $key => $val):
+
+                if ( preg_match('/\s/', $val) ):
+
+                else:
+                    $flag_name = strtolower($val);
+                    $flag_output = ucwords(str_replace("_", " ", $flag_name));
+                    
+                    $total_events = get_transient( 'og_flags_flag_' . $key . '_total_events' );
+                    if( empty( $total_events ) ):
+                        $query_args = array(
+                            'post_type'=>'og_events',
+                            'meta_query' => array(
+                                array(
+                                    'key' => 'og-event-start-date-unix',
+                                    'value' => time(),
+                                    'compare' => '>='
+                                ),
+                                array(
+                                    'key' => 'og-event-flags',
+                                    'value' => '"' . $flag_name . '"',
+                                    'compare' => 'LIKE'                        
+                                )                    
+                            ),
+                            'order' => 'asc',
+                            'posts_per_page' => -1
+                        );
+                        $query = new WP_Query($query_args);
+                        $total_events = $query->post_count;
+                        $cache_status = "false";
+                        set_transient( 'og_flags_flag_' . $key . '_total_events', $total_events, 43200 );
+                    else:
+                        $cache_status = "true";
+                    endif; 
+
+                    $response[] = array(
+                        "id" => $key,
+                        "slug" => $val,
+                        "output" => $flag_output,
+                        "total" => $total_events,
+                        "cache" => $cache_status
+                    );
+
+                endif;
+
+            endforeach;
+            
+            return $response;
+
+        }
+
+
+        /**
+        * API Venue Events Response (JSON Data)
+        *
+        * @since 0.7.0
+        */
+        function api_venue_list_response_data( $data ){
+
+            $venue_uuid = $data['uuid'];
+
+            if(!$page):
+                $page = 1;
+            endif;
+
+            if(!$limit):
+                if( carbon_get_theme_option("og-design-per-page-limit") ):
+                    $limit = carbon_get_theme_option("og-design-per-page-limit");
+                else:
+                    $limit = 24;
+                endif;
+            endif;        
+
+            $response = array(); $events = array();
+            
+            $query_args = array(
+                'post_type'=>'og_events',
+                'meta_query' => array(
+                    array(
+                        'key' => 'og-event-start-date-unix',
+                        'value' => time(),
+                        'compare' => '>='
+                    ),
+                    array(
+                        'key' => 'og-event-venue-uuid',
+                        'value' => $venue_uuid,
+                        'compare' => '='                        
+                    )                    
+                ),
+                'order' => 'asc',
+                'posts_per_page' => $limit,
+                'paged' => $page,
+            );
+            $query = new WP_Query($query_args);
+
+            $response['info'] = array(
+                "limit" => $limit,
+                "current_page" => $page,            
+                "next_page" => $page + 1,
+                "max_pages" => $query->max_num_pages
+            );
+
+            $og_time_format = carbon_get_theme_option( 'og-time-format' );
+            if(!$og_time_format): $og_time_format = "F j, Y, g:i a"; endif;
+
+            $og_time_zone = carbon_get_theme_option( 'og-time-zone' );
+            if(!$og_time_zone): $og_time_zone = "US/Eastern"; endif;
+
+            date_default_timezone_set($og_time_zone);
+            while($query->have_posts()) :
+                $query->the_post();
+
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+    
+                $og_output_date = date('m/d/y g:i a', $og_output_start);
+                // TODO:  FIX DATE COMPARE
+                if( (date('m/d/y', $og_output_start) != date('m/d/y', $og_output_end)) && (date('m/d/y', $og_output_end) != "01/01/70" && date('m/d/y', $og_output_end) != "12/31/69")){
+                    $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $og_output_end);
+                }
+
+                $events[] = array(
+                    "id" => get_the_ID(),
+                    "slug" => get_post_field( 'post_name' ),
+                    "name" => carbon_get_the_post_meta( 'og-event-name' ),
+                    "uuid" => carbon_get_the_post_meta( 'og-event-uuid' ),
+                    "popularity_score" => carbon_get_the_post_meta( 'og-event-popularity-score' ),
+                    "description" => carbon_get_the_post_meta( 'og-event-description' ),
+                    "flags" => json_decode(carbon_get_the_post_meta( 'og-event-flags' )),
+                    "start_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
+                    "end_date" => $end_date,
+                    "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
+                    "end_date_unix" => $end_date_unix,
+                    "date_formatted" => $og_output_date,
+                    "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
+                    "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
+                    "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
+                    "venue_name" => carbon_get_the_post_meta( 'og-event-venue-name' ),
+                    "venue_uuid" => carbon_get_the_post_meta( 'og-event-venue-uuid' ),
+                    "venue_address_1" => carbon_get_the_post_meta( 'og-event-venue-address-1' ),
+                    "venue_address_2" => carbon_get_the_post_meta( 'og-event-venue-address-2' ),
+                    "venue_city" => carbon_get_the_post_meta( 'og-event-venue-city' ),
+                    "venue_state" => carbon_get_the_post_meta( 'og-event-venue-state' ),
+                    "venue_zip" => carbon_get_the_post_meta( 'og-event-venue-zip-code' ),
+                    "venue_country" => carbon_get_the_post_meta( 'og-event-venue-country' ),
+                    "latitude" => carbon_get_the_post_meta( 'og-event-venue-latitude' ),
+                    "longitude" => carbon_get_the_post_meta( 'og-event-venue-longitude' )
+                );
+
+                $venue_name = carbon_get_the_post_meta( 'og-event-venue-name' );
+                $venue_uuid = carbon_get_the_post_meta( 'og-event-venue-uuid' );
+                $venue_address_1 = carbon_get_the_post_meta( 'og-event-venue-address-1' );
+                $venue_address_2 = carbon_get_the_post_meta( 'og-event-venue-address-2' );
+                $venue_city = carbon_get_the_post_meta( 'og-event-venue-city' );
+                $venue_state = carbon_get_the_post_meta( 'og-event-venue-state' );
+                $venue_zip = carbon_get_the_post_meta( 'og-event-venue-zip-code' );
+                $venue_country = carbon_get_the_post_meta( 'og-event-venue-country' );
+                
+            endwhile;
+            wp_reset_query();
+
+            $response['events'] = $events;
+            $response['data'] = array(
+                "venue_name" => $venue_name,
+                "venue_uuid" => $venue_uuid,
+                "venue_address_1" => $venue_address_1,
+                "venue_address_2" => $venue_address_2,
+                "venue_city" => $venue_city,
+                "venue_state" => $venue_state,
+                "venue_zip" => $venue_zip,
+                "venue_country" => $venue_country,
+            );
+
+            return $response;
+
+        }
+
+
+        /**
+        * API Related/Suggested Events Response (JSON Data)
+        *
+        * @since 0.7.0
+        */
+        function api_related_and_suggested_response_data( $data ){
+
+            extract($_GET);
+
+            $parent_id = $data['id'];
+            $flags = explode(",", $flags);
+
+            $response = array(); $events = array();
+            $response['data'] = array(
+                "parent_id" => $parent_id,
+                "related_flags" => $flags
+            );
+
+            $dynamic_flags_query_args = array(
+                "relation" => "OR"
+            );
+            foreach($flags as $flag):
+                $dynamic_flags_query_args[] = array(
+                    'key' => 'og-event-flags',
+                    'value' => '"' . $flag . '"',
+                    'compare' => 'LIKE'    
+                );
+            endforeach;
+
+            $query_args = array(
+                'post_type'=>'og_events',
+                'meta_query' => array(
+                    'relation' => 'AND',
+                    array(
+                        'key' => 'og-event-start-date-unix',
+                        'value' => time(),
+                        'compare' => '>='
+                    ),
+                ),
+                'order' => 'asc',
+                'posts_per_page' => 4,
+                'post__not_in' => array($parent_id)
+            );
+
+            $query_args['meta_query'][] = $dynamic_flags_query_args;
+            $query = new WP_Query($query_args);
+
+            $og_time_format = carbon_get_theme_option( 'og-time-format' );
+            if(!$og_time_format): $og_time_format = "F j, Y, g:i a"; endif;
+
+            $og_time_zone = carbon_get_theme_option( 'og-time-zone' );
+            if(!$og_time_zone): $og_time_zone = "US/Eastern"; endif;
+
+            date_default_timezone_set($og_time_zone);
+            while($query->have_posts()) :
+                $query->the_post();
+
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+    
+                $og_output_date = date('m/d/y g:i a', $og_output_start);
+                // TODO:  FIX DATE COMPARE
+                if( (date('m/d/y', $og_output_start) != date('m/d/y', $og_output_end)) && (date('m/d/y', $og_output_end) != "01/01/70" && date('m/d/y', $og_output_end) != "12/31/69")){
+                    $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $og_output_end);
+                }
+
+                $events[] = array(
+                    "id" => get_the_ID(),
+                    "slug" => get_post_field( 'post_name' ),
+                    "name" => carbon_get_the_post_meta( 'og-event-name' ),
+                    "uuid" => carbon_get_the_post_meta( 'og-event-uuid' ),
+                    "popularity_score" => carbon_get_the_post_meta( 'og-event-popularity-score' ),
+                    "description" => carbon_get_the_post_meta( 'og-event-description' ),
+                    "flags" => json_decode(carbon_get_the_post_meta( 'og-event-flags' )),
+                    "start_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
+                    "end_date" => $end_date,
+                    "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
+                    "end_date_unix" => $end_date_unix,
+                    "date_formatted" => $og_output_date,
+                    "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
+                    "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
+                    "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
+                    "venue_name" => carbon_get_the_post_meta( 'og-event-venue-name' ),
+                    "venue_uuid" => carbon_get_the_post_meta( 'og-event-venue-uuid' ),
+                    "venue_address_1" => carbon_get_the_post_meta( 'og-event-venue-address-1' ),
+                    "venue_address_2" => carbon_get_the_post_meta( 'og-event-venue-address-2' ),
+                    "venue_city" => carbon_get_the_post_meta( 'og-event-venue-city' ),
+                    "venue_state" => carbon_get_the_post_meta( 'og-event-venue-state' ),
+                    "venue_zip" => carbon_get_the_post_meta( 'og-event-venue-zip-code' ),
+                    "venue_country" => carbon_get_the_post_meta( 'og-event-venue-country' ),
+                    "latitude" => carbon_get_the_post_meta( 'og-event-venue-latitude' ),
+                    "longitude" => carbon_get_the_post_meta( 'og-event-venue-longitude' )
+                );
+
+                $venue_name = carbon_get_the_post_meta( 'og-event-venue-name' );
+                $venue_uuid = carbon_get_the_post_meta( 'og-event-venue-uuid' );
+                $venue_address_1 = carbon_get_the_post_meta( 'og-event-venue-address-1' );
+                $venue_address_2 = carbon_get_the_post_meta( 'og-event-venue-address-2' );
+                $venue_city = carbon_get_the_post_meta( 'og-event-venue-city' );
+                $venue_state = carbon_get_the_post_meta( 'og-event-venue-state' );
+                $venue_zip = carbon_get_the_post_meta( 'og-event-venue-zip-code' );
+                $venue_country = carbon_get_the_post_meta( 'og-event-venue-country' );
+                
+            endwhile;
+            wp_reset_query();
+
+            $response['events'] = $events;
+
+
             return $response;
 
         }

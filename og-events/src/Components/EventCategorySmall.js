@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from "react-router-dom";
 import Loading from './Loading';
-
+import EventGridItem from "./EventGridItem"
 class EventCategorySmall extends React.Component {
     
     constructor (props){
@@ -18,7 +18,7 @@ class EventCategorySmall extends React.Component {
     componentDidMount() {
 
         Promise.all([
-            fetch('/wp-json/occasiongenius/v1/flag/' + this.props.event_cat_id ),
+            fetch('/wp-json/occasiongenius/v1/flag/' + this.props.event_cat_id + '?limit=4' ),
           ])
           .then(([res]) => Promise.all([res.json()]))
           .then(([cat_data]) => this.setState({
@@ -33,38 +33,36 @@ class EventCategorySmall extends React.Component {
 
         return ( 
             <>
+
                 <div className="flex items-center justify-center bg-white mb-16">                          
                     <div className="grid grid-cols-12 px-18 gap-5">
 
                         {this.state.isLoading ? (
+
                             <Loading />
+
                         ) : (
                             <>
+
                                 <div className="col-span-12">
                                     <div className="flow-root">
                                         <p className="float-left text-gray-800 text-3xl font-semibold mb-0">
                                             { this.state.category.Output }
                                         </p>
 
-                                        <button className="float-right bg-sky-500 text-white px-2 py-2 rounded-md text-1xl font-light hover:bg-sky-700 transition duration-300 mt-[5px] pl-[10px] pr-[10px] uppercase text-base">View All</button>    
+                                        <Link to={`/events/category/${ this.state.category.Name }`} className="no-underline">
+                                            <button className="float-right bg-gray-800 text-white px-2 py-2 rounded-none text-1xl font-semibold hover:bg-gray-800 transition duration-300 mt-[5px] pl-[10px] pr-[10px] uppercase text-base pt-[12px] leading-none hover:bg-gray-600">View All</button>    
+                                        </Link>
                                     </div>
                                 </div>
 
                                 {this.state.events.map((item, index) => (   
-                                    <div className="col-span-3 bg-rose-700 rounded-xl h-52 md:h-80 no-underline" key={index}>
-                                        <Link to={`/events/details/${ item.slug }`} className="no-underline">
-                                            <img src={ item.image_url } alt={ item.name } className="rounded-t-xl max-h-44" />
-                                            <p className="text-xl text-gray-50 pt-4 pl-3 no-underline text-ellipsis ... overflow-hidden line-clamp-2 h-20 pb-1 mb-0"> { item.name } </p>
-                                            <p className="text-xs md:text-lg font-light text-gray-50 pt-0 pl-3 pb-0 mb-0 no-underline"> 
-                                                { item.date_formatted } <br />
-                                                { item.venue_city }, { item.venue_state }
-                                            </p>
-                                            <span className="text-xs md:text-lg font-light decoration-white	underline text-white text-center block mt-1 underline-offset-4	">More Info</span>
-                                        </Link>
-                                    </div>
+                                    <EventGridItem item={item} key={index} />
                                 ))}
+
                             </>
-                        )}        
+                        )}      
+
                     </div> 
                 </div>
 

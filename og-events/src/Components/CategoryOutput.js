@@ -1,9 +1,10 @@
 import React, { Component } from 'react';
-import { Link } from "react-router-dom";
-import Loading from "../Components/Loading"
-import Breadcrumbs from "../Components/Breadcrumbs"
+import Breadcrumbs from './Breadcrumbs';
+import Loading from './Loading';
+import EventGridItem from "./EventGridItem"
+import { Link } from 'react-router-dom';
 
-class Events extends Component {
+class CategoryOutput extends Component {
 
     constructor (props){
 
@@ -12,8 +13,10 @@ class Events extends Component {
             current_page: [],
             next_page: [],
             max_pages: [],
-            events: [],
-            events_url: '/wp-json/occasiongenius/v1/events?page=',
+            category_data: [],
+            category_events: [],
+            total_events: 0,
+            events_url: '/wp-json/occasiongenius/v1/flag/' + this.props.slug,
             isLoading: 1,
         }
         
@@ -22,18 +25,20 @@ class Events extends Component {
     componentDidMount() {
 
         Promise.all([
-          fetch('/wp-json/occasiongenius/v1/events'),
+          fetch('/wp-json/occasiongenius/v1/flag/' + this.props.slug),
         ])
         .then(([res]) => Promise.all([res.json()]))
         .then(([cat_data]) => this.setState({
-          events: cat_data.events,
+          category_data: cat_data.data,
+          category_events: cat_data.events,
           current_page: cat_data.info.current_page, 
           next_page: cat_data.info.next_page, 
           max_pages: cat_data.info.max_pages, 
+          total_events: cat_data.info.total,
           isLoading: 0
         }));
 
-        document.title = "All Local Events";
+        document.title = "Local Event Categories";
 
     } 
 
@@ -43,7 +48,7 @@ class Events extends Component {
           .then((r) => r.json())
           .then((result) => {
             this.setState({
-                events: result.events,
+                category_events: result.events,
                 isLoading: 0
             });
           })
@@ -60,7 +65,7 @@ class Events extends Component {
             isLoading: 1
           },
           () => {
-            const events_url = this.state.events_url + this.state.current_page;
+            const events_url = this.state.events_url + "?page=" + this.state.current_page;
             this.fetchData(events_url);
             window.scrollTo({
               top: 0,
@@ -78,7 +83,7 @@ class Events extends Component {
             isLoading: 1
           },
           () => {
-            const events_url = this.state.events_url + this.state.current_page;
+            const events_url = this.state.events_url + "?page=" + this.state.current_page;
             this.fetchData(events_url);
             window.scrollTo({
               top: 0,
@@ -96,36 +101,42 @@ class Events extends Component {
         return (
             <>
 
-                <Breadcrumbs parent_title="All Categories" parent_url="/events/categories/" page_name="All Local Events" />
+                <Breadcrumbs parent_title="All Categories" parent_url="/events/categories/" page_name={ this.state.category_data.Output } />
                 
                 <div className="flex items-center justify-center bg-white mb-16">                          
                     <div className="grid grid-cols-12 px-18 gap-5">
 
                         {this.state.isLoading ? (
+
                             <Loading />
+
                         ) : (
                             <>
+
                                 <div className="col-span-12">
                                     <div className="flow-root">
                                         <p className="float-left text-gray-800 text-3xl font-semibold mb-0">
-                                            All Local Events
+                                            { this.state.category_data.Output }
                                         </p>
                                     </div>
                                 </div>
 
-                                {this.state.events.map((item, index) => (   
-                                    <div className="col-span-3 bg-rose-700 rounded-xl h-52 md:h-80 no-underline" key={index}>
-                                        <Link to={`/events/details/${ item.slug }`} className="no-underline">
-                                            <img src={ item.image_url } alt={ item.name } className="rounded-t-xl max-h-44" />
-                                            <p className="text-xl text-gray-50 pt-4 pl-3 no-underline text-ellipsis ... overflow-hidden line-clamp-2 h-20 pb-1 mb-0"> { item.name } </p>
-                                            <p className="text-xs md:text-lg font-light text-gray-50 pt-0 pl-3 pb-0 mb-0 no-underline"> 
-                                                { item.date_formatted } <br />
-                                                { item.venue_city }, { item.venue_state }
-                                            </p>
-                                            <span className="text-xs md:text-lg font-light decoration-white	underline text-white text-center block mt-1 underline-offset-4">More Info</span>
-                                        </Link>
-                                    </div>
-                                ))}
+                                {this.state.total_events > 0 &&
+                                    <>
+                                        {this.state.category_events.map((item, index) => (   
+                                            <EventGridItem item={item} key={index} />
+                                        ))}
+                                    </>
+                                }
+
+                                {this.state.total_events === 0 &&
+                                    <>
+                                        <div className="col-span-12 text-center mb-12 w-full min-w-full">
+                                            <p className="text-gray-700 ml-1 md:ml-2 text-sm font-medium">There were no events found for this category, please try a <Link to="/events/categories/" className="text-gray-700 hover:text-gray-900 text-sm font-medium">different category</Link>.</p>
+                                        </div>
+                                    </>
+                                }
+
                             </>
                         )}        
                     </div> 
@@ -154,4 +165,4 @@ class Events extends Component {
     }
 }
 
-export default Events
+export default CategoryOutput
