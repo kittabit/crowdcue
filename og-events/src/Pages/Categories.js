@@ -40,7 +40,7 @@ class Categories extends Component {
                 {this.state.isLoading ? (
                     <Loading />
                 ) : (
-                    <div class="flex w-full">
+                    <div className="flex w-full">
                         <ul className="w-full">
                             {this.state.categories.map((item, index) => (
                             <>

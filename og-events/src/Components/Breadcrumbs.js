@@ -34,7 +34,7 @@ class Breadcrumbs extends React.Component {
         return ( 
             <>
                 
-                <nav class="flex" className="mb-3" aria-label="Breadcrumb">
+                <nav className="flex mb-3" aria-label="Breadcrumb">
                     <ol className="inline-flex items-center space-x-1 ml-0 pl-0">
 
                         <li>

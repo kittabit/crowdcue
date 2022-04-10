@@ -12,8 +12,9 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 1.  Shortcode: Add the `[occassiongenius_events]` Shortcode to the page.
 2.  Blocks: Add the `OccasionGenius Events` Block via Gutenberg.
 
-[![OccasionGenius](/public/images/v0_7_0_1.png?raw=true)]
-[![OccasionGenius](/public/images/v0_7_0_2.png?raw=true)]
+![Occasion Genius Screenshot #1](/public/images/v0_9_0_img1.png)
+![Occasion Genius Screenshot #2](/public/images/v0_9_0_img2.png)
+![Occasion Genius Screenshot #3](/public/images/v0_9_0_img3.png)
 
 ##  Carbon Fields / Options
 *  og-token-key
@@ -22,6 +23,7 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 *  og-disabled-flags
 *  og-disabled-areas
 *  og-featured-flags
+*  og-google-maps-api-key
 *  og-design-per-page-limit
 *  og-design-header-image-1
 *  og-design-header-image-2
@@ -63,18 +65,23 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 ##  API Routes
 
 ###  All Events
+
 `/wp-json/occasiongenius/v1/events`
 
 ###  All Flags (Categories)
+
 `/wp-json/occasiongenius/v1/flags`
 
 ###  Single Flag (Category)
+
 `/wp-json/occasiongenius/v1/flag/[flag_id]?limit=X&page=X`
 
 ###  Single Event
+
 `/wp-json/occasiongenius/v1/event/[slugline]`
 
 ###  Single Venue
+
 `/wp-json/occasiongenius/v1/venue/[uuid]`
 
 ##  React Setup
@@ -103,22 +110,16 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 
 ##  Coming Soon / Todo's
 
-*  Search and Filter Components (v0.9.x)
-
-*  Event Schema Implementation (v0.9.x)
-
-*  Google Maps API Key, Output, and Get Directions  (v0.9.x)
+*  Search and Filter Components (v0.10.x)
 
 *  Popularity Score Queries/Sorting (v0.10.x)
 
-*  API Caching & Faster Performance / Responses  (v0.9.x)
-
-*  Past Events Logic (Error Notice / View All Events)  (v0.8.x)
-
-*  User Personalization & localStorage  (v0.9.x)
-
 *  Recommendation Logic (other events on this day, in the area, and personalization)
 
-##  Known Bugs/Issues
+## Future Enhancements / Feature Requests
 
-*  Responsive Cleanup w/ Tailwind
+*  Google Map Nearby Events (Map Markers w/ other listings)
+
+*  Pre-Defined Cookies / LocalStorage (for inner-events queries - such as booking dates)
+
+*  Bucket List (user highlighted/stored events)

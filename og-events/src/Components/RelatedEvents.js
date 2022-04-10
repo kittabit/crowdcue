@@ -19,7 +19,7 @@ class RelatedEvents extends React.Component {
         var related_flags = this.props.flags.join(",");
 
         Promise.all([
-            fetch('/wp-json/occasiongenius/v1/suggested/' + this.props.parent_id + '?flags=' + related_flags ),
+            fetch('/wp-json/occasiongenius/v1/suggested/' + this.props.parent_id + '?flags=' + related_flags + "&limit=8" ),
           ])
           .then(([res]) => Promise.all([res.json()]))
           .then(([suggested_data]) => this.setState({
@@ -37,7 +37,7 @@ class RelatedEvents extends React.Component {
             var related_flags = this.props.flags.join(",");
 
             Promise.all([
-                fetch('/wp-json/occasiongenius/v1/suggested/' + this.props.parent_id + '?flags=' + related_flags ),
+                fetch('/wp-json/occasiongenius/v1/suggested/' + this.props.parent_id + '?flags=' + related_flags + "&limit=8" ),
               ])
               .then(([res]) => Promise.all([res.json()]))
               .then(([suggested_data]) => this.setState({
