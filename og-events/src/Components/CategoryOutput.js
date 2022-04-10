@@ -38,7 +38,7 @@ class CategoryOutput extends Component {
           isLoading: 0
         }));
 
-        document.title = "Local Event Categories";
+        document.title = "All Categories for Local Events";
 
     } 
 

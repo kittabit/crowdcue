@@ -4,7 +4,7 @@
  * Plugin Name: OccasionGenius
  * Plugin URI: https://occasiongenius.com/
  * Description: OccasionGenius allows you to easily output a beautiful and simple events page without any coding.
- * Version: 0.8.0
+ * Version: 0.9.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
@@ -88,13 +88,20 @@ if (!class_exists("OccasionGenius")) {
                     'methods' => 'GET',
                     'callback' => array($this, 'api_related_and_suggested_response_data'),
                 ));
-            });              
+            });    
+            add_action( 'rest_api_init', function () {
+                register_rest_route( 'occasiongenius/v1', '/personalized', array(
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_personalized_response_data'),
+                ));
+            });                          
             add_action( 'rest_api_init', function () {
                 register_rest_route( 'occasiongenius/v1', '/event_flags', array(
                     'methods' => 'GET',
                     'callback' => array($this, 'api_event_flags_response_data'),
                 ));
             });
+
             add_action( 'wp', array($this, 'og_scheduled_tasks') );
             add_action( 'og_sync_events', array($this, 'import_events') );
             add_action( 'og_purge_events', array($this, 'purge_events') );            
@@ -328,6 +335,8 @@ if (!class_exists("OccasionGenius")) {
                 Field::make( "multiselect", "og-disabled-flags", "Disabled Flags" )->add_options( $flags )->set_width( 50 )->set_conditional_logic( $conditional_logic ),
                 Field::make( "multiselect", "og-disabled-areas", "Disabled Areas" )->add_options( $areas )->set_width( 50 )->set_conditional_logic( $conditional_logic ),
                 Field::make( "multiselect", "og-featured-flags", "Featured Flags" )->add_options( $flags )->set_width( 100 )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'separator', 'og_map_options', 'Google Maps Settings' )->set_classes( 'og-admin-heading' )->set_conditional_logic( $conditional_logic ),
+                Field::make( 'text', 'og-google-maps-api-key', "API Key")->set_conditional_logic( $conditional_logic ),      
                 Field::make( 'separator', 'og_design_options', 'Basic Design Settings' )->set_classes( 'og-admin-heading' )->set_conditional_logic( $conditional_logic ),
                 Field::make( 'select', 'og-design-per-page-limit', "Events Per Page (Archive Pages)")->add_options( $grid_options )->set_default_value( "12" )->set_conditional_logic( $conditional_logic ),
                 Field::make( 'separator', 'og_design_hp_options', 'Events Homepage Settings' )->set_classes( 'og-admin-heading' )->set_conditional_logic( $conditional_logic ),
@@ -449,15 +458,40 @@ if (!class_exists("OccasionGenius")) {
         */
         function og_pluralize($singular) {        
 
+            $skip_it = array(
+                "g",
+                "z",
+                "c",
+                "y",
+                "s",
+                "n"
+            );
+
             $last_letter = strtolower($singular[strlen($singular)-1]);
             switch($last_letter) {
+                case in_array($last_letter, $skip_it):
+                    return $singular;
                 case 'y':
                     return substr($singular,0,-1).'ies';
-                case 's':
-                    return $singular.'es';
                 default:
                     return $singular.'s';
             }
+
+        }
+
+
+        /**
+        * Allows for Flag Name Cleanup
+        *
+        * @since 0.9.0
+        */
+        function og_flag_cleanup($flag) {  
+
+            $flag = str_replace("Genre R B", "Genre  R&B", $flag);
+            $flag = str_replace("Dont Miss", "Don't Miss", $flag);
+            $flag = str_replace("Genre ", "Genre: ", $flag);
+
+            return $flag;
 
         }
 
@@ -731,6 +765,7 @@ if (!class_exists("OccasionGenius")) {
             $og_featured_flags = json_encode(carbon_get_theme_option( 'og-featured-flags' ));            
             $og_hp_btn_text = carbon_get_theme_option( 'og-design-hp-btn-text' );
             $og_hp_btn_url = carbon_get_theme_option( 'og-design-hp-btn-url' );
+            $og_gmaps_api_key = carbon_get_theme_option( 'og-google-maps-api-key' );
             ?>
             <script>
             window.ogSettings = window.ogSettings || {};
@@ -743,7 +778,8 @@ if (!class_exists("OccasionGenius")) {
                 'og_subheading': '<?php echo esc_js($og_subheading); ?>',
                 'og_hp_btn_text': '<?php echo esc_js($og_hp_btn_text); ?>',
                 'og_hp_btn_url': '<?php echo esc_js($og_hp_btn_url); ?>',
-                'og_featured_flags': '<?php echo esc_js($og_featured_flags); ?>'
+                'og_featured_flags': '<?php echo esc_js($og_featured_flags); ?>',
+                'og_gmaps_api_key': '<?php echo esc_js($og_gmaps_api_key); ?>'
             }
             </script>            
             <div id="App" class="og-root"></div>
@@ -862,10 +898,26 @@ if (!class_exists("OccasionGenius")) {
                 $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
                 $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
     
-                $og_output_date = date('m/d/y g:i a', $og_output_start);
-                if( (date('m/d/y', $og_output_start) != date('m/d/y', $og_output_end)) && (date('m/d/y', $og_output_end) != "01/01/70" && date('m/d/y', $og_output_end) != "12/31/69")){
-                    $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $og_output_end);
-                }
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_date = date('m/d/y g:i a', $og_output_start); 
+                $og_gcal_start_date = date("Ymd" . '__' . "Gi", $og_output_start);
+
+                if(carbon_get_the_post_meta( 'og-event-end-date' )):
+                    $end_date = date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' )));
+                    $end_date_unix = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+                    if( date('m/d/y', $og_output_start) == date('m/d/y', $end_date_unix)):
+                        $og_output_date = date('m/d/y g:i a', $og_output_start) . " - " . date('g:i a', $end_date_unix);
+                    else:
+                        $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $end_date_unix);
+                    endif;
+                    $og_gcal_end_date = date("Ymd" . '__' . "Gi", $end_date_unix);
+                else:
+                    $end_date = "";
+                    $end_date_unix = "";
+                endif;
+
+                $og_gcal_start_date = str_replace("__", "T", $og_gcal_start_date);
+                $og_gcal_end_date = str_replace("__", "T", $og_gcal_end_date);
 
                 $events['events'][] = array(
                     "id" => get_the_ID(),
@@ -918,70 +970,77 @@ if (!class_exists("OccasionGenius")) {
                 'name' => $slug
             ) );
 
-            $og_time_format = carbon_get_theme_option( 'og-time-format' );
-            if(!$og_time_format): $og_time_format = "F j, Y, g:i a"; endif;
-
-            $og_time_zone = carbon_get_theme_option( 'og-time-zone' );
-            if(!$og_time_zone): $og_time_zone = "US/Eastern"; endif;
-
-            date_default_timezone_set($og_time_zone);
-
-            $event_details = array();
-            while($query->have_posts()) :
-                $query->the_post();
-
-                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
-                $og_output_date = date('m/d/y g:i a', $og_output_start); 
-                $og_gcal_start_date = date("Ymd" . '__' . "Gi", $og_output_start);
-
-                if(carbon_get_the_post_meta( 'og-event-end-date' )):
-                    $end_date = date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' )));
-                    $end_date_unix = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
-                    if( date('m/d/y', $og_output_start) == date('m/d/y', $end_date_unix)):
-                        $og_output_date = date('m/d/y g:i a', $og_output_start) . " - " . date('g:i a', $end_date_unix);
-                    else:
-                        $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $end_date_unix);
-                    endif;
-                    $og_gcal_end_date = date("Ymd" . '__' . "Gi", $end_date_unix);
-                else:
-                    $end_date = "";
-                    $end_date_unix = "";
-                endif;
-
-                $og_gcal_start_date = str_replace("__", "T", $og_gcal_start_date);
-                $og_gcal_end_date = str_replace("__", "T", $og_gcal_end_date);
-
+            if($query->post_count == 0):
                 $event_details["event"] = array(
-                    "id" => get_the_ID(),
-                    "name" => carbon_get_the_post_meta( 'og-event-name' ),
-                    "uuid" => carbon_get_the_post_meta( 'og-event-uuid' ),
-                    "popularity_score" => carbon_get_the_post_meta( 'og-event-popularity-score' ),
-                    "description" => carbon_get_the_post_meta( 'og-event-description' ),
-                    "flags" => json_decode(carbon_get_the_post_meta( 'og-event-flags' )),
-                    "start_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
-                    "end_date" => $end_date,
-                    "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
-                    "end_date_unix" => $end_date_unix,
-                    "date_formatted" => $og_output_date,
-                    "gcal_start_date" => $og_gcal_start_date,
-                    "gcal_end_date" => $og_gcal_end_date,
-                    "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
-                    "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
-                    "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
-                    "venue_name" => carbon_get_the_post_meta( 'og-event-venue-name' ),
-                    "venue_uuid" => carbon_get_the_post_meta( 'og-event-venue-uuid' ),
-                    "venue_address_1" => carbon_get_the_post_meta( 'og-event-venue-address-1' ),
-                    "venue_address_2" => carbon_get_the_post_meta( 'og-event-venue-address-2' ),
-                    "venue_city" => carbon_get_the_post_meta( 'og-event-venue-city' ),
-                    "venue_state" => carbon_get_the_post_meta( 'og-event-venue-state' ),
-                    "venue_zip" => carbon_get_the_post_meta( 'og-event-venue-zip-code' ),
-                    "venue_country" => carbon_get_the_post_meta( 'og-event-venue-country' ),
-                    "latitude" => carbon_get_the_post_meta( 'og-event-venue-latitude' ),
-                    "longitude" => carbon_get_the_post_meta( 'og-event-venue-longitude' )
+                    "error" => "true"
                 );
-            endwhile;
+            else:
+                $og_time_format = carbon_get_theme_option( 'og-time-format' );
+                if(!$og_time_format): $og_time_format = "F j, Y, g:i a"; endif;
 
-            wp_reset_query();
+                $og_time_zone = carbon_get_theme_option( 'og-time-zone' );
+                if(!$og_time_zone): $og_time_zone = "US/Eastern"; endif;
+
+                date_default_timezone_set($og_time_zone);
+
+                $event_details = array();
+                while($query->have_posts()) :
+                    $query->the_post();
+
+                    $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                    $og_output_date = date('m/d/y g:i a', $og_output_start); 
+                    $og_gcal_start_date = date("Ymd" . '__' . "Gi", $og_output_start);
+
+                    if(carbon_get_the_post_meta( 'og-event-end-date' )):
+                        $end_date = date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' )));
+                        $end_date_unix = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+                        if( date('m/d/y', $og_output_start) == date('m/d/y', $end_date_unix)):
+                            $og_output_date = date('m/d/y g:i a', $og_output_start) . " - " . date('g:i a', $end_date_unix);
+                        else:
+                            $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $end_date_unix);
+                        endif;
+                        $og_gcal_end_date = date("Ymd" . '__' . "Gi", $end_date_unix);
+                    else:
+                        $end_date = "";
+                        $end_date_unix = "";
+                    endif;
+
+                    $og_gcal_start_date = str_replace("__", "T", $og_gcal_start_date);
+                    $og_gcal_end_date = str_replace("__", "T", $og_gcal_end_date);
+
+                    $event_details["event"] = array(
+                        "id" => get_the_ID(),
+                        "name" => carbon_get_the_post_meta( 'og-event-name' ),
+                        "uuid" => carbon_get_the_post_meta( 'og-event-uuid' ),
+                        "popularity_score" => carbon_get_the_post_meta( 'og-event-popularity-score' ),
+                        "description" => carbon_get_the_post_meta( 'og-event-description' ),
+                        "flags" => json_decode(carbon_get_the_post_meta( 'og-event-flags' )),
+                        "start_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
+                        "end_date" => $end_date,
+                        "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
+                        "end_date_unix" => $end_date_unix,
+                        "date_formatted" => $og_output_date,
+                        "gcal_start_date" => $og_gcal_start_date,
+                        "gcal_end_date" => $og_gcal_end_date,
+                        "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
+                        "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
+                        "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
+                        "venue_name" => carbon_get_the_post_meta( 'og-event-venue-name' ),
+                        "venue_uuid" => carbon_get_the_post_meta( 'og-event-venue-uuid' ),
+                        "venue_address_1" => carbon_get_the_post_meta( 'og-event-venue-address-1' ),
+                        "venue_address_2" => carbon_get_the_post_meta( 'og-event-venue-address-2' ),
+                        "venue_city" => carbon_get_the_post_meta( 'og-event-venue-city' ),
+                        "venue_state" => carbon_get_the_post_meta( 'og-event-venue-state' ),
+                        "venue_zip" => carbon_get_the_post_meta( 'og-event-venue-zip-code' ),
+                        "venue_country" => carbon_get_the_post_meta( 'og-event-venue-country' ),
+                        "latitude" => carbon_get_the_post_meta( 'og-event-venue-latitude' ),
+                        "longitude" => carbon_get_the_post_meta( 'og-event-venue-longitude' )
+                    );
+                endwhile;
+
+                wp_reset_query();
+            endif;
+
             return $event_details;
 
         }
@@ -1005,6 +1064,7 @@ if (!class_exists("OccasionGenius")) {
 
             $flag_name = strtolower($flags[$flag_id]);
             $flag_output = $this->og_pluralize(ucwords(str_replace("_", " ", $flag_name)));
+            $flag_output = $this->og_flag_cleanup($flag_output);
 
             if(!$page):
                 $page = 1;
@@ -1067,11 +1127,26 @@ if (!class_exists("OccasionGenius")) {
                 $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
                 $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
     
-                $og_output_date = date('m/d/y g:i a', $og_output_start);
-                // TODO:  FIX DATE COMPARE
-                if( (date('m/d/y', $og_output_start) != date('m/d/y', $og_output_end)) && (date('m/d/y', $og_output_end) != "01/01/70" && date('m/d/y', $og_output_end) != "12/31/69")){
-                    $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $og_output_end);
-                }
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_date = date('m/d/y g:i a', $og_output_start); 
+                $og_gcal_start_date = date("Ymd" . '__' . "Gi", $og_output_start);
+
+                if(carbon_get_the_post_meta( 'og-event-end-date' )):
+                    $end_date = date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' )));
+                    $end_date_unix = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+                    if( date('m/d/y', $og_output_start) == date('m/d/y', $end_date_unix)):
+                        $og_output_date = date('m/d/y g:i a', $og_output_start) . " - " . date('g:i a', $end_date_unix);
+                    else:
+                        $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $end_date_unix);
+                    endif;
+                    $og_gcal_end_date = date("Ymd" . '__' . "Gi", $end_date_unix);
+                else:
+                    $end_date = "";
+                    $end_date_unix = "";
+                endif;
+
+                $og_gcal_start_date = str_replace("__", "T", $og_gcal_start_date);
+                $og_gcal_end_date = str_replace("__", "T", $og_gcal_end_date);
 
                 $events[] = array(
                     "id" => get_the_ID(),
@@ -1125,7 +1200,9 @@ if (!class_exists("OccasionGenius")) {
                 else:
                     $flag_name = strtolower($val);
                     $flag_output = ucwords(str_replace("_", " ", $flag_name));
-                    
+                    $flag_output = $this->og_pluralize($flag_output);
+                    $flag_output = $this->og_flag_cleanup($flag_output);
+
                     $total_events = get_transient( 'og_flags_flag_' . $key . '_total_events' );
                     if( empty( $total_events ) ):
                         $query_args = array(
@@ -1187,6 +1264,8 @@ if (!class_exists("OccasionGenius")) {
                 foreach($flags as $flag):
                     $flag_slug = strtolower($flag);
                     $flag_name = ucwords(str_replace("_", " ", $flag_slug));
+                    $flag_name = $this->og_pluralize($flag_name);
+                    $flag_name = $this->og_flag_cleanup($flag_name);
 
                     $response[] = array(
                         "slug" => $flag_slug,
@@ -1264,11 +1343,26 @@ if (!class_exists("OccasionGenius")) {
                 $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
                 $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
     
-                $og_output_date = date('m/d/y g:i a', $og_output_start);
-                // TODO:  FIX DATE COMPARE
-                if( (date('m/d/y', $og_output_start) != date('m/d/y', $og_output_end)) && (date('m/d/y', $og_output_end) != "01/01/70" && date('m/d/y', $og_output_end) != "12/31/69")){
-                    $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $og_output_end);
-                }
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_date = date('m/d/y g:i a', $og_output_start); 
+                $og_gcal_start_date = date("Ymd" . '__' . "Gi", $og_output_start);
+
+                if(carbon_get_the_post_meta( 'og-event-end-date' )):
+                    $end_date = date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' )));
+                    $end_date_unix = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+                    if( date('m/d/y', $og_output_start) == date('m/d/y', $end_date_unix)):
+                        $og_output_date = date('m/d/y g:i a', $og_output_start) . " - " . date('g:i a', $end_date_unix);
+                    else:
+                        $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $end_date_unix);
+                    endif;
+                    $og_gcal_end_date = date("Ymd" . '__' . "Gi", $end_date_unix);
+                else:
+                    $end_date = "";
+                    $end_date_unix = "";
+                endif;
+
+                $og_gcal_start_date = str_replace("__", "T", $og_gcal_start_date);
+                $og_gcal_end_date = str_replace("__", "T", $og_gcal_end_date);
 
                 $events[] = array(
                     "id" => get_the_ID(),
@@ -1339,6 +1433,10 @@ if (!class_exists("OccasionGenius")) {
             $parent_id = $data['id'];
             $flags = explode(",", $flags);
 
+            if(!$limit):
+                $limit = 4;
+            endif;
+
             $response = array(); $events = array();
             $response['data'] = array(
                 "parent_id" => $parent_id,
@@ -1367,7 +1465,7 @@ if (!class_exists("OccasionGenius")) {
                     ),
                 ),
                 'order' => 'asc',
-                'posts_per_page' => 4,
+                'posts_per_page' => $limit,
                 'post__not_in' => array($parent_id)
             );
 
@@ -1387,11 +1485,26 @@ if (!class_exists("OccasionGenius")) {
                 $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
                 $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
     
-                $og_output_date = date('m/d/y g:i a', $og_output_start);
-                // TODO:  FIX DATE COMPARE
-                if( (date('m/d/y', $og_output_start) != date('m/d/y', $og_output_end)) && (date('m/d/y', $og_output_end) != "01/01/70" && date('m/d/y', $og_output_end) != "12/31/69")){
-                    $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $og_output_end);
-                }
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_date = date('m/d/y g:i a', $og_output_start); 
+                $og_gcal_start_date = date("Ymd" . '__' . "Gi", $og_output_start);
+
+                if(carbon_get_the_post_meta( 'og-event-end-date' )):
+                    $end_date = date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' )));
+                    $end_date_unix = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+                    if( date('m/d/y', $og_output_start) == date('m/d/y', $end_date_unix)):
+                        $og_output_date = date('m/d/y g:i a', $og_output_start) . " - " . date('g:i a', $end_date_unix);
+                    else:
+                        $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $end_date_unix);
+                    endif;
+                    $og_gcal_end_date = date("Ymd" . '__' . "Gi", $end_date_unix);
+                else:
+                    $end_date = "";
+                    $end_date_unix = "";
+                endif;
+
+                $og_gcal_start_date = str_replace("__", "T", $og_gcal_start_date);
+                $og_gcal_end_date = str_replace("__", "T", $og_gcal_end_date);
 
                 $events[] = array(
                     "id" => get_the_ID(),
@@ -1435,6 +1548,145 @@ if (!class_exists("OccasionGenius")) {
 
             $response['events'] = $events;
 
+            return $response;
+
+        }
+
+
+        /**
+        * API Personalized Events Response (JSON Data)
+        *
+        * @since 0.9.0
+        */
+        function api_personalized_response_data(){
+
+            extract($_GET);
+            $flags = explode(",", $flags);
+
+            if(!$limit):
+                $limit = 4;
+            endif;
+
+            $response = array(); $flag_count = array(); $events = array();
+            $counts = array_count_values($flags);
+
+            foreach($flags as $flag):
+                if($flag != "undefined"):
+                    $flag_count[$flag] = array(
+                        "flag" => $flag,
+                        "count" => $counts[$flag]
+                    );
+                endif;
+            endforeach;
+
+            $dynamic_flags_query_args = array(
+                "relation" => "OR"
+            );
+            foreach($flag_count as $flag):
+                $dynamic_flags_query_args[] = array(
+                    'key' => 'og-event-flags',
+                    'value' => '"' . $flag['flag'] . '"',
+                    'compare' => 'LIKE'    
+                );
+            endforeach;
+
+            $query_args = array(
+                'post_type'=>'og_events',
+                'meta_query' => array(
+                    'relation' => 'AND',
+                    array(
+                        'key' => 'og-event-start-date-unix',
+                        'value' => time(),
+                        'compare' => '>='
+                    ),
+                ),
+                'meta_key' => '_og-event-popularity-score',
+                'orderby' => 'meta_value',
+                'order' => 'DESC',
+                'posts_per_page' => $limit,
+            );
+            $query_args['meta_query'][] = $dynamic_flags_query_args;
+
+            $query = new WP_Query($query_args);
+
+            $og_time_format = carbon_get_theme_option( 'og-time-format' );
+            if(!$og_time_format): $og_time_format = "F j, Y, g:i a"; endif;
+
+            $og_time_zone = carbon_get_theme_option( 'og-time-zone' );
+            if(!$og_time_zone): $og_time_zone = "US/Eastern"; endif;
+
+            date_default_timezone_set($og_time_zone);
+            while($query->have_posts()) :
+                $query->the_post();
+
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+    
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_date = date('m/d/y g:i a', $og_output_start); 
+                $og_gcal_start_date = date("Ymd" . '__' . "Gi", $og_output_start);
+
+                if(carbon_get_the_post_meta( 'og-event-end-date' )):
+                    $end_date = date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' )));
+                    $end_date_unix = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+                    if( date('m/d/y', $og_output_start) == date('m/d/y', $end_date_unix)):
+                        $og_output_date = date('m/d/y g:i a', $og_output_start) . " - " . date('g:i a', $end_date_unix);
+                    else:
+                        $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $end_date_unix);
+                    endif;
+                    $og_gcal_end_date = date("Ymd" . '__' . "Gi", $end_date_unix);
+                else:
+                    $end_date = "";
+                    $end_date_unix = "";
+                endif;
+
+                $og_gcal_start_date = str_replace("__", "T", $og_gcal_start_date);
+                $og_gcal_end_date = str_replace("__", "T", $og_gcal_end_date);
+
+                $events[] = array(
+                    "id" => get_the_ID(),
+                    "slug" => get_post_field( 'post_name' ),
+                    "name" => carbon_get_the_post_meta( 'og-event-name' ),
+                    "uuid" => carbon_get_the_post_meta( 'og-event-uuid' ),
+                    "popularity_score" => carbon_get_the_post_meta( 'og-event-popularity-score' ),
+                    "description" => carbon_get_the_post_meta( 'og-event-description' ),
+                    "flags" => json_decode(carbon_get_the_post_meta( 'og-event-flags' )),
+                    "start_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
+                    "end_date" => $end_date,
+                    "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
+                    "end_date_unix" => $end_date_unix,
+                    "date_formatted" => $og_output_date,
+                    "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
+                    "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
+                    "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
+                    "venue_name" => carbon_get_the_post_meta( 'og-event-venue-name' ),
+                    "venue_uuid" => carbon_get_the_post_meta( 'og-event-venue-uuid' ),
+                    "venue_address_1" => carbon_get_the_post_meta( 'og-event-venue-address-1' ),
+                    "venue_address_2" => carbon_get_the_post_meta( 'og-event-venue-address-2' ),
+                    "venue_city" => carbon_get_the_post_meta( 'og-event-venue-city' ),
+                    "venue_state" => carbon_get_the_post_meta( 'og-event-venue-state' ),
+                    "venue_zip" => carbon_get_the_post_meta( 'og-event-venue-zip-code' ),
+                    "venue_country" => carbon_get_the_post_meta( 'og-event-venue-country' ),
+                    "latitude" => carbon_get_the_post_meta( 'og-event-venue-latitude' ),
+                    "longitude" => carbon_get_the_post_meta( 'og-event-venue-longitude' )
+                );
+
+                $venue_name = carbon_get_the_post_meta( 'og-event-venue-name' );
+                $venue_uuid = carbon_get_the_post_meta( 'og-event-venue-uuid' );
+                $venue_address_1 = carbon_get_the_post_meta( 'og-event-venue-address-1' );
+                $venue_address_2 = carbon_get_the_post_meta( 'og-event-venue-address-2' );
+                $venue_city = carbon_get_the_post_meta( 'og-event-venue-city' );
+                $venue_state = carbon_get_the_post_meta( 'og-event-venue-state' );
+                $venue_zip = carbon_get_the_post_meta( 'og-event-venue-zip-code' );
+                $venue_country = carbon_get_the_post_meta( 'og-event-venue-country' );
+                
+            endwhile;
+            wp_reset_query();
+
+            $response['events'] = $events;
+
+            $response['total'] = $query->post_count;
+            $response['info'] = $flag_count;
 
             return $response;
 

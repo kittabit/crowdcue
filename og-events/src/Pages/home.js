@@ -2,14 +2,15 @@ import React, { Component } from 'react'
 import { Link } from "react-router-dom";
 import Header from '../Components/Header';
 import EventCategorySmall from '../Components/EventCategorySmall';
-
+import PersonalizedEvents from '../Components/PersonalizedEvents';
 class Home extends Component {
 
     constructor (props){
 
         super(props);
         this.state = {
-
+            user_personalized_events: [],
+            user_personalized_events_count: 0,
         }
         
     }
@@ -17,13 +18,34 @@ class Home extends Component {
     componentDidMount() {
 
         document.title = "Local Events";
+        if(localStorage.getItem('og_user_flags') !== null){
+            var og_user_flags = JSON.parse(localStorage.getItem('og_user_flags'));
 
+            Promise.all([
+                fetch('/wp-json/occasiongenius/v1/personalized?flags=' + og_user_flags.join(",")),
+              ])
+              .then(([res]) => Promise.all([res.json()]))
+              .then(([data]) => this.setState({
+                user_personalized_events: data.events,
+                user_personalized_events_count: data.total
+            }));
+
+        }
+    
     }   
 
     render(){
+
         return (
             <>
+            
                 <Header />
+
+                {this.state.user_personalized_events_count === 4 &&
+                    <>
+                        <PersonalizedEvents events={ this.state.user_personalized_events } />
+                    </>
+                }
 
                 {JSON.parse(window.ogSettings.og_featured_flags).map((item, index) => (
                   <>

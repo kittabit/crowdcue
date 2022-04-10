@@ -8,8 +8,10 @@ function EventDetails() {
 
     return (
         <>  
-    
-            <EventSingle uuid={slug} />
+        
+            <div itemscope="" itemtype="https://schema.org/Event">
+                <EventSingle uuid={slug} />
+            </div>
 
         </>
     );
