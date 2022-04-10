@@ -140,7 +140,7 @@ class Events extends Component {
                         </>
                     }
 
-                    {next_page < max_pages &&
+                    { next_page <= max_pages && max_pages !== current_page &&
                         <>
                             <button onClick={this.nextPage} className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:text-white no-underline text-center">
                                 Next Page

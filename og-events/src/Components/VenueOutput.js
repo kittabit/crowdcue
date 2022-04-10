@@ -33,9 +33,7 @@ class VenueOutput extends Component {
           next_page: data.info.next_page, 
           max_pages: data.info.max_pages, 
           isLoading: 0
-        }));
-
-        //document.title = "Local Event Categories";
+        }));        
 
     } 
 
@@ -94,6 +92,8 @@ class VenueOutput extends Component {
     render(){
 
         const { current_page, next_page, max_pages } = this.state;
+
+        document.title = "Local Events at " + this.state.venue_data.venue_name;
 
         return (
             <>

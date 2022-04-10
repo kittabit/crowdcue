@@ -4,7 +4,7 @@
  * Plugin Name: OccasionGenius
  * Plugin URI: https://occasiongenius.com/
  * Description: OccasionGenius allows you to easily output a beautiful and simple events page without any coding.
- * Version: 0.7.0
+ * Version: 0.8.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
@@ -89,7 +89,12 @@ if (!class_exists("OccasionGenius")) {
                     'callback' => array($this, 'api_related_and_suggested_response_data'),
                 ));
             });              
-            
+            add_action( 'rest_api_init', function () {
+                register_rest_route( 'occasiongenius/v1', '/event_flags', array(
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_event_flags_response_data'),
+                ));
+            });
             add_action( 'wp', array($this, 'og_scheduled_tasks') );
             add_action( 'og_sync_events', array($this, 'import_events') );
             add_action( 'og_purge_events', array($this, 'purge_events') );            
@@ -474,18 +479,15 @@ if (!class_exists("OccasionGenius")) {
                 $url = "https://v2.api.occasiongenius.com/api/events/?start_date=" . $start_date . "&end_date=" . $end_date . "&limit=25";
             }
             
-            $crl = curl_init();
-            curl_setopt($crl, CURLOPT_URL, $url);
-            curl_setopt($crl, CURLOPT_RETURNTRANSFER, true);
+            $args = array(
+                'headers' => array(
+                    "accept" => "application/json",
+                    "Authorization" => 'Token ' . $og_token
+                )
+            );
+            $response = wp_remote_get($url, $args);
+            $rest = wp_remote_retrieve_body($response);
 
-            $headers = array();
-            $headers[] = 'accept: application/json';
-            $headers[] = 'Authorization: Token ' . $og_token;
-            
-            curl_setopt($crl, CURLOPT_HTTPHEADER,$headers);
-            $rest = curl_exec($crl);
-            curl_close($crl);
-            
             $results = json_decode($rest);
             foreach($results->results as $event){
 
@@ -582,18 +584,15 @@ if (!class_exists("OccasionGenius")) {
                         $url = "https://v2.api.occasiongenius.com/api/flag_definitions/";
                     }
                     
-                    $crl = curl_init();
-                    curl_setopt($crl, CURLOPT_URL, $url);
-                    curl_setopt($crl, CURLOPT_RETURNTRANSFER, true);
+                    $args = array(
+                        'headers' => array(
+                            "accept" => "application/json",
+                            "Authorization" => 'Token ' . $og_token
+                        )
+                    );
+                    $response = wp_remote_get($url, $args);
+                    $rest = wp_remote_retrieve_body($response);
 
-                    $headers = array();
-                    $headers[] = 'accept: application/json';
-                    $headers[] = 'Authorization: Token ' . $og_token;
-
-                    curl_setopt($crl, CURLOPT_HTTPHEADER,$headers);
-                    $rest = curl_exec($crl);
-                    curl_close($crl);
-                    
                     $results = json_decode($rest);
                     if(is_array($results->results)):                    
                         foreach($results->results as $flag){
@@ -635,17 +634,14 @@ if (!class_exists("OccasionGenius")) {
                         $url = "https://v2.api.occasiongenius.com/api/areas/";
                     }
                     
-                    $crl = curl_init();
-                    curl_setopt($crl, CURLOPT_URL, $url);
-                    curl_setopt($crl, CURLOPT_RETURNTRANSFER, true);
-
-                    $headers = array();
-                    $headers[] = 'accept: application/json';
-                    $headers[] = 'Authorization: Token ' . $og_token;
-                    
-                    curl_setopt($crl, CURLOPT_HTTPHEADER,$headers);
-                    $rest = curl_exec($crl);
-                    curl_close($crl);
+                    $args = array(
+                        'headers' => array(
+                            "accept" => "application/json",
+                            "Authorization" => 'Token ' . $og_token
+                        )
+                    );
+                    $response = wp_remote_get($url, $args);
+                    $rest = wp_remote_retrieve_body($response);
                     
                     $results = json_decode($rest);
                     if(is_array($results->results)):
@@ -930,26 +926,31 @@ if (!class_exists("OccasionGenius")) {
 
             date_default_timezone_set($og_time_zone);
 
-            if(carbon_get_the_post_meta( 'og-event-end-date' )):
-                $end_date = date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' )));
-                $end_date_unix = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
-            else:
-                $end_date = "";
-                $end_date_unix = "";
-            endif;
-
-            $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
-            $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
-
-			$og_output_date = date('m/d/y g:i a', $og_output_start);
-			if( (date('m/d/y', $og_output_start) != date('m/d/y', $og_output_end)) && (date('m/d/y', $og_output_end) != "01/01/70")){
-				$og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $og_output_end);
-			}
-
             $event_details = array();
             while($query->have_posts()) :
                 $query->the_post();
-    
+
+                $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                $og_output_date = date('m/d/y g:i a', $og_output_start); 
+                $og_gcal_start_date = date("Ymd" . '__' . "Gi", $og_output_start);
+
+                if(carbon_get_the_post_meta( 'og-event-end-date' )):
+                    $end_date = date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' )));
+                    $end_date_unix = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+                    if( date('m/d/y', $og_output_start) == date('m/d/y', $end_date_unix)):
+                        $og_output_date = date('m/d/y g:i a', $og_output_start) . " - " . date('g:i a', $end_date_unix);
+                    else:
+                        $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $end_date_unix);
+                    endif;
+                    $og_gcal_end_date = date("Ymd" . '__' . "Gi", $end_date_unix);
+                else:
+                    $end_date = "";
+                    $end_date_unix = "";
+                endif;
+
+                $og_gcal_start_date = str_replace("__", "T", $og_gcal_start_date);
+                $og_gcal_end_date = str_replace("__", "T", $og_gcal_end_date);
+
                 $event_details["event"] = array(
                     "id" => get_the_ID(),
                     "name" => carbon_get_the_post_meta( 'og-event-name' ),
@@ -962,6 +963,8 @@ if (!class_exists("OccasionGenius")) {
                     "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
                     "end_date_unix" => $end_date_unix,
                     "date_formatted" => $og_output_date,
+                    "gcal_start_date" => $og_gcal_start_date,
+                    "gcal_end_date" => $og_gcal_end_date,
                     "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
                     "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
                     "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
@@ -1162,6 +1165,37 @@ if (!class_exists("OccasionGenius")) {
 
             endforeach;
             
+            return $response;
+
+        }
+
+
+        /**
+        * API Event Flags Clean Response (JSON Data)
+        *
+        * @since 0.8.0
+        */
+        function api_event_flags_response_data(){
+
+            // TODO:  Hardcoded count (2 currently)
+            extract($_GET);
+
+            $response = array();
+
+            if($flags):
+                $flags = explode(",", $flags);
+                foreach($flags as $flag):
+                    $flag_slug = strtolower($flag);
+                    $flag_name = ucwords(str_replace("_", " ", $flag_slug));
+
+                    $response[] = array(
+                        "slug" => $flag_slug,
+                        "name" => $flag_name,
+                    );
+                endforeach;
+            endif;
+
+            $response = array_slice($response, 0, 2);
             return $response;
 
         }

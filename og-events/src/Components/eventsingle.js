@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import RelatedEvents from './RelatedEvents';
 import Breadcrumbs from './Breadcrumbs';
 import Loading from './Loading';
+import OGUserLogging from './Tools/OGUserLogging';
 class EventSingle extends React.Component {
 
     constructor (props){
@@ -29,6 +30,8 @@ class EventSingle extends React.Component {
             isLoading: 0
         }));
 
+        OGUserLogging("", this.props.uuid );
+
     }
 
     componentDidUpdate(previousProps, previousState) {
@@ -45,6 +48,8 @@ class EventSingle extends React.Component {
                 event: data.event,
                 isLoading: 0
             }));
+
+            OGUserLogging("", this.props.uuid );
 
             window.scrollTo(0, 0)
 
@@ -73,7 +78,7 @@ class EventSingle extends React.Component {
                         return (
 
                             <>
-                                <Breadcrumbs parent_title="All Categories" parent_url="/events/categories/" page_name={ this.state.event.name } />
+                                <Breadcrumbs page_flags={ this.state.event.flags} page_name={ this.state.event.name } />
 
                                 <div className="container mx-auto" data-popularity={ this.state.event.popularity_score }> 
                                     <div className="mx-auto">
@@ -90,12 +95,7 @@ class EventSingle extends React.Component {
                                                     { this.state.event.description }
                                                 </p>
                                                 <p className="text-base leading-normal text-gray-600 mt-2 font-semibold">
-                                                    { this.state.event.start_date } 
-                                                    {this.state.event.end_date &&
-                                                        <>
-                                                            - { this.state.event.end_date }
-                                                        </>
-                                                    }
+                                                    { this.state.event.date_formatted } 
                                                 </p>
                                                                       
                                                 <div className="w-full mx-auto">
@@ -139,7 +139,7 @@ class EventSingle extends React.Component {
                                                             </li>
 
                                                             <li className="p-0 m-0">
-                                                                <a href={`https://calendar.google.com/calendar/r/eventedit?text=${this.state.event.name}&dates=${ this.state.event.start_date }&details=For+details,+link+here:+${ window.location.href }&location=${ this.state.event.venue_name }+${ this.state.event.venue_address_1 }+${ this.state.event.venue_city }, ${ this.state.event.venue_state } ${ this.state.event.venue_zip } ${ this.state.event.venue_country }`}   target="_blank" rel="noreferrer" className="inline-flex items-center mr-1 px-3 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-sm text-gray-600 no-underline" title="Add to Calendar">
+                                                                <a href={`https://calendar.google.com/calendar/r/eventedit?text=${this.state.event.name}&dates=${ this.state.event.gcal_start_date }/${ this.state.event.gcal_end_date }&details=For+details,+link+here:+${ window.location.href }&location=${ this.state.event.venue_name }+${ this.state.event.venue_address_1 }+${ this.state.event.venue_city }, ${ this.state.event.venue_state } ${ this.state.event.venue_zip } ${ this.state.event.venue_country }`}   target="_blank" rel="noreferrer" className="inline-flex items-center mr-1 px-3 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-sm text-gray-600 no-underline" title="Add to Calendar">
                                                                     <span>                                                                    
                                                                         <svg className="w-auto h-4 mr-2 fill-current text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M96 32C96 14.33 110.3 0 128 0C145.7 0 160 14.33 160 32V64H288V32C288 14.33 302.3 0 320 0C337.7 0 352 14.33 352 32V64H400C426.5 64 448 85.49 448 112V160H0V112C0 85.49 21.49 64 48 64H96V32zM448 464C448 490.5 426.5 512 400 512H48C21.49 512 0 490.5 0 464V192H448V464z"/></svg>
                                                                     </span>

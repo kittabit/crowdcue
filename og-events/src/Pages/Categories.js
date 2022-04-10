@@ -30,14 +30,7 @@ class Categories extends Component {
 
     } 
     
-    handleEvent(){
-    
-        console.log(this.props);  
-    
-    }         
-
     render(){
-        console.table(this.state.categories);
 
         return (
             <>

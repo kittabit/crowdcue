@@ -98,6 +98,8 @@ class CategoryOutput extends Component {
 
         const { current_page, next_page, max_pages } = this.state;
 
+        document.title = this.state.category_data.Output + " | Local Events";
+
         return (
             <>
 
@@ -151,7 +153,7 @@ class CategoryOutput extends Component {
                         </>
                     }
 
-                    {next_page < max_pages &&
+                    { next_page <= max_pages && max_pages !== current_page &&
                         <>
                             <button onClick={this.nextPage} className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:text-white no-underline text-center">
                                 Next Page
