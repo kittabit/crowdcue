@@ -91,6 +91,8 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 --  Loading.js
 --  RelatedEvents.js
 --  VenueOutput.js
+--  Components/
+----  OGUserLogging.js
 - Pages/
 --  Categories.js
 --  EventDetails.js
@@ -101,32 +103,22 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 
 ##  Coming Soon / Todo's
 
-*  Replace `CURL` w/ `wp_remote_get` (v0.7.1)
-
-*  Search and Filter Components (v0.8.x)
-
-*  Automated Sitemap Injection (v0.8.x)
+*  Search and Filter Components (v0.9.x)
 
 *  Event Schema Implementation (v0.9.x)
 
-*  Administration Panel SEO Options (Title's & Descriptions) + Front End SEO Tweaks (v0.9.x)
+*  Google Maps API Key, Output, and Get Directions  (v0.9.x)
 
-*  Google Maps API Key, Output, and Get Directions  (v0.8.x)
+*  Popularity Score Queries/Sorting (v0.10.x)
 
-*  Popularity Score Queries/Sorting
-
-*  API Caching & Faster Performance / Responses  (v0.8.x)
+*  API Caching & Faster Performance / Responses  (v0.9.x)
 
 *  Past Events Logic (Error Notice / View All Events)  (v0.8.x)
 
-*  User Personalization & localStorage  (v0.8.x / v0.9.x)
+*  User Personalization & localStorage  (v0.9.x)
 
 *  Recommendation Logic (other events on this day, in the area, and personalization)
 
 ##  Known Bugs/Issues
 
 *  Responsive Cleanup w/ Tailwind
-
-*  Calendar Date Format (Google Calendar)
-
-*  Next/Max Page Conditional
