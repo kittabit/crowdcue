@@ -4,7 +4,7 @@
  * Plugin Name: OccasionGenius
  * Plugin URI: https://occasiongenius.com/
  * Description: OccasionGenius allows you to easily output a beautiful and simple events page without any coding.
- * Version: 0.9.0
+ * Version: 1.0.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
@@ -36,7 +36,7 @@ if (!class_exists("OccasionGenius")) {
 
             $this->OG_WIDGET_PATH = plugin_dir_path( __FILE__ ) . '/og-events';
             $this->OG_ASSET_MANIFEST = $this->OG_WIDGET_PATH . '/build/asset-manifest.json';
-            $this->OG_DB_VERSION = "0.7.0";
+            $this->OG_DB_VERSION = "0.10.0";
 
             register_activation_hook( __FILE__, array($this, 'og_install') );
             add_action( 'init', array($this, 'og_pretty_urls') );
@@ -101,7 +101,6 @@ if (!class_exists("OccasionGenius")) {
                     'callback' => array($this, 'api_event_flags_response_data'),
                 ));
             });
-
             add_action( 'wp', array($this, 'og_scheduled_tasks') );
             add_action( 'og_sync_events', array($this, 'import_events') );
             add_action( 'og_purge_events', array($this, 'purge_events') );            
