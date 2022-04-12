@@ -1,9 +1,19 @@
+=== OccasionGenius ===
+Contributors: kittabit
+Donate link:
+Tags: events, calendar, event, schedule, organizer, venue, occasiongenius
+Requires at least: 5.4
+Tested up to: 5.9.1
+Stable tag: 1.0.0
+Requires PHP: 7.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-#  OccasionGenius
+== Description ==
 
 The _unofficial_ OccasionGenius WordPress plugin allows you to easily output a beautiful and simple events page without any coding using the [OccasionGenius](https://occasiongenius.com/) API.
 
-##  Installation
+== Installation ==
 
 Download and active the plugin, then go to "Settings" => "OccasionGenius." From there, input your API key and save your settings (along with any design tweaks).
 
@@ -12,11 +22,8 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 1.  Shortcode: Add the `[occasiongenius_events]` Shortcode to the page.
 2.  Blocks: Add the `OccasionGenius Events` Block via Gutenberg.
 
-![Occasion Genius Screenshot #1](/public/images/v0_9_0_img1.png)
-![Occasion Genius Screenshot #2](/public/images/v0_9_0_img2.png)
-![Occasion Genius Screenshot #3](/public/images/v0_9_0_img3.png)
+== Carbon Fields / Options ==
 
-##  Carbon Fields / Options
 *  og-token-key
 *  og-time-format
 *  og-time-zone
@@ -34,10 +41,10 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 *  og-design-hp-btn-url
 *  og-developer-security-key
 
-##  Post Types
+== Post Types ==
 *  og_events
 
-###  Fields
+== Fields ==
 *  og-event-name
 *  og-event-uuid
 *  og-event-popularity-score
@@ -62,7 +69,7 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 *  og-event-venue-latitude
 *  og-event-venue-longitude
 
-##  API Routes
+== API Routes ==
 
 ###  All Events
 
@@ -84,7 +91,10 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 
 `/wp-json/occasiongenius/v1/venue/[uuid]`
 
-##  React Setup
+
+
+== React Setup ==
+
 
 - Layout.js
 - index.js
@@ -108,7 +118,7 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 --  SingleCategory.js
 --  SingleVenue.js
 
-##  Coming Soon / Todo's
+== Coming Soon / Todo's ==
 
 *  Search and Filter Components (All Events)
 

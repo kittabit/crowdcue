@@ -1,0 +1,6 @@
+# Changelog
+All notable changes `OccasionGenius` will be documented in this file.
+
+## [1.0.0] - 2022-04-12
+### Added:
+- Development Build to Production
