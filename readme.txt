@@ -1,21 +1,21 @@
-=== OccasionGenius ===
+=== Crowdcue ===
 Contributors: kittabit
 Donate link:
-Tags: events, calendar, event, schedule, organizer, venue, occasiongenius
+Tags: events, calendar, event, schedule, organizer, venue
 Requires at least: 5.4
 Tested up to: 5.9.1
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 == Description ==
 
-The _unofficial_ OccasionGenius WordPress plugin allows you to easily output a beautiful and simple events page without any coding using the [OccasionGenius](https://occasiongenius.com/) API.
+Crowdcue is the _unofficial_ OccasionGenius WordPress plugin allows you to easily output a beautiful and simple events page without any coding using the [OccasionGenius](https://occasiongenius.com/) API.
 
 == Installation ==
 
-Download and active the plugin, then go to "Settings" => "OccasionGenius." From there, input your API key and save your settings (along with any design tweaks).
+Download and active the plugin, then go to "Settings" => "Crowdcue." From there, input your OccasionGenius API key and save your settings (along with any design tweaks).
 
 After this has been completed, you can add to an "Events" (/events/) page via either of the follow:
 

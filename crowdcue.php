@@ -1,10 +1,10 @@
 <?php
 /**
  * @wordpress-plugin
- * Plugin Name: OccasionGenius
- * Plugin URI: https://occasiongenius.com/
- * Description: OccasionGenius allows you to easily output a beautiful and simple events page without any coding.
- * Version: 1.0.0
+ * Plugin Name: Crowdcue
+ * Plugin URI: https://github.com/kittabit/crowdcue
+ * Description: Crowdcue allows you to easily output a beautiful and simple events page without any coding using OccasionGenius.
+ * Version: 1.0.1
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
@@ -19,9 +19,9 @@ use Carbon_Fields\Field;
 
 define( 'Carbon_Fields\URL', plugin_dir_url( __FILE__ ) . "vendor/htmlburger/carbon-fields" );
 
-if (!class_exists("OccasionGenius")) {
+if (!class_exists("Crowdcue")) {
 
-    class OccasionGenius {
+    class Crowdcue {
 
         protected $OG_WIDGET_PATH;
         protected $OG_ASSET_MANIFEST;
@@ -36,7 +36,7 @@ if (!class_exists("OccasionGenius")) {
 
             $this->OG_WIDGET_PATH = plugin_dir_path( __FILE__ ) . '/og-events';
             $this->OG_ASSET_MANIFEST = $this->OG_WIDGET_PATH . '/build/asset-manifest.json';
-            $this->OG_DB_VERSION = "0.10.0";
+            $this->OG_DB_VERSION = "1.0.1";
 
             register_activation_hook( __FILE__, array($this, 'og_install') );
             add_action( 'init', array($this, 'og_pretty_urls') );
@@ -326,9 +326,9 @@ if (!class_exists("OccasionGenius")) {
                 )
             );     
             
-            Container::make( 'theme_options', 'OccasionGenius' )->set_page_parent("options-general.php")->add_fields( array(
+            Container::make( 'theme_options', 'Crowdcue' )->set_page_parent("options-general.php")->add_fields( array(
                 Field::make( 'separator', 'og_basic_settings', 'Basic Settings & Information' )->set_classes( 'og-admin-heading' ),
-                Field::make( 'text', 'og-token-key', "Token Key"),        
+                Field::make( 'text', 'og-token-key', "OccasionGenius Token Key"),        
                 Field::make( 'select', 'og-time-format', 'Time Format' )->add_options( $time_formats )->set_default_value('F j, Y, g:i a')->set_width( 50 )->set_conditional_logic( $conditional_logic ),
                 Field::make( 'select', 'og-time-zone', 'Time Zone' )->add_options( $timezones )->set_default_value('US/Eastern')->set_width( 50 )->set_conditional_logic( $conditional_logic ),
                 Field::make( "multiselect", "og-disabled-flags", "Disabled Flags" )->add_options( $flags )->set_width( 50 )->set_conditional_logic( $conditional_logic ),
@@ -1747,4 +1747,4 @@ if (!class_exists("OccasionGenius")) {
     }
 
 }
-$occasiongenius = new OccasionGenius();
+$crowdcue = new Crowdcue();
