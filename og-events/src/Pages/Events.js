@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import { Link } from "react-router-dom";
 import Loading from "../Components/Loading"
 import Breadcrumbs from "../Components/Breadcrumbs"
-
+import EventFilter from '../Components/EventFilter';
+import EventGridItem from '../Components/EventGridItem';
 class Events extends Component {
 
     constructor (props){
@@ -13,7 +13,7 @@ class Events extends Component {
             next_page: [],
             max_pages: [],
             events: [],
-            events_url: '/wp-json/occasiongenius/v1/events?page=',
+            events_url: '/wp-json/occasiongenius/v1/events?limit=12&page=',
             isLoading: 1,
         }
         
@@ -22,7 +22,7 @@ class Events extends Component {
     componentDidMount() {
 
         Promise.all([
-          fetch('/wp-json/occasiongenius/v1/events'),
+          fetch('/wp-json/occasiongenius/v1/events?limit=12'),
         ])
         .then(([res]) => Promise.all([res.json()]))
         .then(([cat_data]) => this.setState({
@@ -39,11 +39,18 @@ class Events extends Component {
 
     fetchData = async (url) => {
     
+        this.setState({
+            isLoading: 1
+        });
+        
         await fetch(url)
           .then((r) => r.json())
           .then((result) => {
             this.setState({
                 events: result.events,
+                current_page: result.info.current_page, 
+                next_page: result.info.next_page, 
+                max_pages: result.info.max_pages, 
                 isLoading: 0
             });
           })
@@ -96,42 +103,39 @@ class Events extends Component {
         return (
             <>
 
-                <Breadcrumbs parent_title="All Categories" parent_url="/events/categories/" page_name="All Local Events" />
+                <Breadcrumbs parent_title="All Categories" parent_url="/events/categories/" page_name="All Local Events" disable_all_events="true" />
                 
-                <div className="flex items-center justify-center bg-white mb-16">                          
-                    <div className="grid grid-cols-12 px-18 gap-5">
+                <div className="col-span-12">
+                    <div className="flow-root">
+                        <p className="float-left text-gray-800 text-3xl font-semibold mb-4">
+                            All Local Events
+                        </p>
+                    </div>
+                </div>                
+                    
+      
+                <div className="flex w-full flex-wrap">                          
 
-                        {this.state.isLoading ? (
-                            <Loading />
-                        ) : (
-                            <>
-                                <div className="col-span-12">
-                                    <div className="flow-root">
-                                        <p className="float-left text-gray-800 text-3xl font-semibold mb-0">
-                                            All Local Events
-                                        </p>
-                                    </div>
-                                </div>
+                    <div className="flex flex-col md:w-1/5">
+                        <EventFilter fetchData={this.fetchData} />
+                    </div>
 
-                                {this.state.events.map((item, index) => (   
-                                    <div className="col-span-3 bg-rose-700 rounded-xl h-52 md:h-80 no-underline" key={index}>
-                                        <Link to={`/events/details/${ item.slug }`} className="no-underline">
-                                            <img src={ item.image_url } alt={ item.name } className="rounded-t-xl max-h-44" />
-                                            <p className="text-xl text-gray-50 pt-4 pl-3 no-underline text-ellipsis ... overflow-hidden line-clamp-2 h-20 pb-1 mb-0"> { item.name } </p>
-                                            <p className="text-xs md:text-lg font-light text-gray-50 pt-0 pl-3 pb-0 mb-0 no-underline"> 
-                                                { item.date_formatted } <br />
-                                                { item.venue_city }, { item.venue_state }
-                                            </p>
-                                            <span className="text-xs md:text-lg font-light decoration-white	underline text-white text-center block mt-1 underline-offset-4">More Info</span>
-                                        </Link>
-                                    </div>
-                                ))}
-                            </>
-                        )}        
-                    </div> 
+                    <div className="flex flex-col md:w-4/5 items-center">
+                        <div className="grid grid-cols-12 px-18 gap-5">
+                            {this.state.isLoading ? (
+                                <Loading />
+                            ) : (
+                                <>                            
+                                    {this.state.events?.map((item, index) => (   
+                                        <EventGridItem item={item} key={index} />
+                                    ))}
+                                </>
+                            )}                                            
+                        </div>
+                    </div>
                 </div>
 
-                <div className="flex items-center flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6 lg:space-x-8 mt-8 md:mt-16">
+                <div className="flex items-center flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6 lg:space-x-8 mt-8 md:mt-16 mt-16">
                     {current_page > 1 &&
                         <>
                             <button onClick={this.prevPage} className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:text-white no-underline text-center">

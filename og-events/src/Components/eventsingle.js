@@ -114,7 +114,7 @@ class EventSingle extends React.Component {
                                                     </p>
                                                                         
                                                     <div className="w-full mx-auto">
-                                                        <h4 className="text-lg font-bold m-0 p-0 mb-1">Share This Event:</h4>
+                                                        <h4 className="text-lg font-bold m-0 p-0 mb-1 bg-transparent">Share This Event:</h4>
                                                         <div className="flex">
                                                             <ul className="flex flex-wrap m-0 p-0">
                                                                 <li className="p-0 m-0">
@@ -192,7 +192,7 @@ class EventSingle extends React.Component {
                                             <h3 className="mt-1 text-2xl font-semibold text-center text-gray-800 text-center md:w-9/12 lg:w-7/12 mb-1 pb-1">
                                                 Venue Information
                                             </h3>
-                                            <h4 className="mt-1 text-xl font-semibold text-center text-gray-800 text-center md:w-9/12 lg:w-7/12 mb-1 pb-1" itemprop="name">
+                                            <h4 className="mt-1 text-xl font-semibold text-center text-gray-800 text-center md:w-9/12 lg:w-7/12 mb-1 pb-1 bg-transparent" itemprop="name">
                                                 { this.state.event.venue_name }
                                             </h4>
                                             <p className="text-base leading-normal text-center text-gray-600 md:w-9/12 lg:w-7/12 mb-4" itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">

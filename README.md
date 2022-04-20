@@ -72,6 +72,10 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 
 `/wp-json/occasiongenius/v1/flags`
 
+###  All Areas
+
+`/wp-json/occasiongenius/v1/areas`
+
 ###  Single Flag (Category)
 
 `/wp-json/occasiongenius/v1/flag/[flag_id]?limit=X&page=X`
@@ -109,8 +113,6 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 - SingleVenue.js
 
 ##  Coming Soon / Todo's
-
-*  Search and Filter Components (All Events)
 
 *  Popularity Score Queries/Sorting
 

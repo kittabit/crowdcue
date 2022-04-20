@@ -4,7 +4,7 @@
  * Plugin Name: Crowdcue
  * Plugin URI: https://github.com/kittabit/crowdcue
  * Description: Crowdcue allows you to easily output a beautiful and simple events page without any coding using OccasionGenius.
- * Version: 1.0.1
+ * Version: 1.1.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
@@ -36,7 +36,7 @@ if (!class_exists("Crowdcue")) {
 
             $this->OG_WIDGET_PATH = plugin_dir_path( __FILE__ ) . '/og-events';
             $this->OG_ASSET_MANIFEST = $this->OG_WIDGET_PATH . '/build/asset-manifest.json';
-            $this->OG_DB_VERSION = "1.0.1";
+            $this->OG_DB_VERSION = "1.1.0";
 
             register_activation_hook( __FILE__, array($this, 'og_install') );
             add_action( 'init', array($this, 'og_pretty_urls') );
@@ -77,6 +77,12 @@ if (!class_exists("Crowdcue")) {
                     'callback' => array($this, 'api_category_list_response_data'),
                 ));
             });     
+            add_action( 'rest_api_init', function () {
+                register_rest_route( 'occasiongenius/v1', '/areas', array(
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_area_list_response_data'),
+                ));
+            });                 
             add_action( 'rest_api_init', function () {
                 register_rest_route( 'occasiongenius/v1', '/venue/(?P<uuid>\S+)', array(
                     'methods' => 'GET',
@@ -463,7 +469,8 @@ if (!class_exists("Crowdcue")) {
                 "c",
                 "y",
                 "s",
-                "n"
+                "n",
+                "l"
             );
 
             $last_letter = strtolower($singular[strlen($singular)-1]);
@@ -778,7 +785,9 @@ if (!class_exists("Crowdcue")) {
                 'og_hp_btn_text': '<?php echo esc_js($og_hp_btn_text); ?>',
                 'og_hp_btn_url': '<?php echo esc_js($og_hp_btn_url); ?>',
                 'og_featured_flags': '<?php echo esc_js($og_featured_flags); ?>',
-                'og_gmaps_api_key': '<?php echo esc_js($og_gmaps_api_key); ?>'
+                'og_gmaps_api_key': '<?php echo esc_js($og_gmaps_api_key); ?>',
+                'og_base_date': '<?php echo esc_js(date('Y-m-d')); ?>',
+                'og_min_base_date': '<?php echo esc_js(date('Y-m-d', strtotime("+1 Day"))); ?>'
             }
             </script>            
             <div id="App" class="og-root"></div>
@@ -850,45 +859,92 @@ if (!class_exists("Crowdcue")) {
                         'key' => 'og-event-start-date-unix',
                         'type' => 'NUMERIC' 
                     ),
-                    array(
-                        'key' => 'og-event-start-date-unix',
-                        'value' => time(),
-                        'compare' => '>='
-                    )
                 ),
                 'order' => 'asc',
                 'posts_per_page' => $limit,
                 'paged' => $page,
             );
 
-            if(count($disabled_flags) > 0 && is_array($disabled_flags)):
-                foreach($disabled_flags as $df):
-                    $query_args['meta_query'][] = array(
-                        'key' => 'og-event-flags',
-                        'value' => $flags[$df],
-                        'compare' => 'NOT IN'                        
-                    );
-                endforeach;
+
+            if($filter_start):
+                $events['info']['filter']['start'] = $filter_start;
+                $query_args['meta_query'][] = array(
+                    'key' => 'og-event-start-date-unix',
+                    'value' => strtotime($filter_start),
+                    'compare' => '>='            
+                );
+            else:
+                $query_args['meta_query'][] = array(
+                    'key' => 'og-event-start-date-unix',
+                    'value' => time(),
+                    'compare' => '>='            
+                );                
             endif;
 
-            if(count($disabled_areas) > 0 && is_array($disabled_areas)):
-                foreach($disabled_areas as $da):
+            if($filter_end):
+                $events['info']['filter']['end'] = $filter_end;
+                $query_args['meta_query'][] = array(
+                    'key' => 'og-event-start-date-unix',
+                    'value' => strtotime($filter_end),
+                    'compare' => '<='                             
+                );
+            endif;            
+
+            if($filter_flags):
+                $filter_flags = explode(",", $filter_flags);
+                $events['info']['filter']['flags'] = $filter_flags;
+                // array(
+                //     'relation' => 'OR',
+                foreach($filter_flags as $ff):
                     $query_args['meta_query'][] = array(
-                        'key' => 'og-event-venue-city',
-                        'value' => $areas[$da],
-                        'compare' => 'NOT IN'                        
+                        'key' => 'og-event-flags',
+                        'value' => '"' . $ff . '"',
+                        'compare' => 'LIKE'                             
                     );
                 endforeach;
+            else:
+                if(count($disabled_flags) > 0 && is_array($disabled_flags)):
+                    foreach($disabled_flags as $df):
+                        $query_args['meta_query'][] = array(
+                            'key' => 'og-event-flags',
+                            'value' => $flags[$df],
+                            'compare' => 'NOT IN'                        
+                        );
+                    endforeach;
+                endif;
             endif;
+
+            if($filter_areas):
+                $filter_areas = explode(",", $filter_areas);
+                $events['info']['filter']['areas'] = $filter_areas;
+                // $query_args['meta_query'][] = array(
+                //     'key' => 'og-event-flags',
+                //     'value' => $flags[$df],
+                //     'compare' => 'NOT IN'                        
+                // );
+                foreach($filter_areas as $a):
+                    //echo $areas[$a];
+                endforeach;
+            else:
+                if(count($disabled_areas) > 0 && is_array($disabled_areas)):
+                    foreach($disabled_areas as $da):
+                        $query_args['meta_query'][] = array(
+                            'key' => 'og-event-venue-city',
+                            'value' => $areas[$da],
+                            'compare' => 'NOT IN'                        
+                        );
+                    endforeach;
+                endif;
+            endif;
+
+            //print_r($query_args);
 
             $query = new WP_Query( $query_args );
 
-            $events['info'] = array(
-                "limit" => $limit,
-                "current_page" => $page,            
-                "next_page" => $page + 1,
-                "max_pages" => $query->max_num_pages
-            );
+            $events['info']['limit'] = $limit;
+            $events['info']['current_page'] = $page;
+            $events['info']['next_page'] = $page + 1;
+            $events['info']['max_pages'] = $query->max_num_pages;
 
             while($query->have_posts()) :
                 $query->the_post();
@@ -1183,9 +1239,29 @@ if (!class_exists("Crowdcue")) {
 
         }
 
+        
+        /**
+        * API Areas Response (JSON Data)
+        *
+        * @since 1.1.0
+        */
+        function api_area_list_response_data( $data ){
+
+            $areas = $this->og_api_areas(); $response = array();
+
+            foreach($areas as $key => $value):
+                $response[] = array(
+                    "slug" => $key,
+                    "output" => $value
+                );
+            endforeach;
+
+            return $response;
+
+        }
 
         /**
-        * API Flags/Categoryes Response (JSON Data)
+        * API Flags/Categories Response (JSON Data)
         *
         * @since 0.7.0
         */
