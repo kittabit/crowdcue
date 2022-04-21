@@ -4,7 +4,7 @@
  * Plugin Name: Crowdcue
  * Plugin URI: https://github.com/kittabit/crowdcue
  * Description: Crowdcue allows you to easily output a beautiful and simple events page without any coding using OccasionGenius.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
@@ -36,7 +36,7 @@ if (!class_exists("Crowdcue")) {
 
             $this->OG_WIDGET_PATH = plugin_dir_path( __FILE__ ) . '/og-events';
             $this->OG_ASSET_MANIFEST = $this->OG_WIDGET_PATH . '/build/asset-manifest.json';
-            $this->OG_DB_VERSION = "1.1.0";
+            $this->OG_DB_VERSION = "1.2.0";
 
             register_activation_hook( __FILE__, array($this, 'og_install') );
             add_action( 'init', array($this, 'og_pretty_urls') );
@@ -100,7 +100,13 @@ if (!class_exists("Crowdcue")) {
                     'methods' => 'GET',
                     'callback' => array($this, 'api_personalized_response_data'),
                 ));
-            });                          
+            });             
+            add_action( 'rest_api_init', function () {
+                register_rest_route( 'occasiongenius/v1', '/bucket', array(
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_bucket_response_data'),
+                ));
+            });                                      
             add_action( 'rest_api_init', function () {
                 register_rest_route( 'occasiongenius/v1', '/event_flags', array(
                     'methods' => 'GET',
@@ -353,7 +359,9 @@ if (!class_exists("Crowdcue")) {
                 Field::make( 'text', 'og-design-hp-btn-text', "Call To Action Button Text")->set_width( 50 )->set_conditional_logic( $conditional_logic ),  
                 Field::make( 'text', 'og-design-hp-btn-url', "Call To Action Button URL")->set_width( 50 )->set_conditional_logic( $conditional_logic ),  
                 Field::make( 'separator', 'og_developer_settings', 'Developer Settings' )->set_classes( 'og-admin-heading' ),
-                Field::make( 'text', 'og-developer-security-key', "Developer Security Key")->set_default_value( md5(rand() . "-og-" . time() ))
+                Field::make( 'text', 'og-developer-security-key', "Developer Security Key")->set_default_value( md5(rand() . "-og-" . time() )),
+                Field::make( 'separator', 'og_analytics_settings', 'Analytics Settings' )->set_classes( 'og-admin-heading' ),
+                Field::make( 'text', 'og-analytics-ua-id', "Google Analytics UA ID")->set_conditional_logic( $conditional_logic ) 
             ));
 
             $this->register_events_block();
@@ -464,13 +472,16 @@ if (!class_exists("Crowdcue")) {
         function og_pluralize($singular) {        
 
             $skip_it = array(
+                "a",
                 "g",
                 "z",
                 "c",
                 "y",
                 "s",
                 "n",
-                "l"
+                "o",
+                "l",
+                "q"
             );
 
             $last_letter = strtolower($singular[strlen($singular)-1]);
@@ -772,6 +783,7 @@ if (!class_exists("Crowdcue")) {
             $og_hp_btn_text = carbon_get_theme_option( 'og-design-hp-btn-text' );
             $og_hp_btn_url = carbon_get_theme_option( 'og-design-hp-btn-url' );
             $og_gmaps_api_key = carbon_get_theme_option( 'og-google-maps-api-key' );
+            $og_analytics_id = carbon_get_theme_option( 'og-analytics-ua-id' );
             ?>
             <script>
             window.ogSettings = window.ogSettings || {};
@@ -787,7 +799,9 @@ if (!class_exists("Crowdcue")) {
                 'og_featured_flags': '<?php echo esc_js($og_featured_flags); ?>',
                 'og_gmaps_api_key': '<?php echo esc_js($og_gmaps_api_key); ?>',
                 'og_base_date': '<?php echo esc_js(date('Y-m-d')); ?>',
-                'og_min_base_date': '<?php echo esc_js(date('Y-m-d', strtotime("+1 Day"))); ?>'
+                'og_min_base_date': '<?php echo esc_js(date('Y-m-d', strtotime("+1 Day"))); ?>',
+                'og_max_base_date': '<?php echo esc_js(date('Y-m-d', strtotime("+1 Month"))); ?>',
+                'og_ga_ua': '<?php echo esc_js( $og_analytics_id ); ?>'
             }
             </script>            
             <div id="App" class="og-root"></div>
@@ -917,13 +931,13 @@ if (!class_exists("Crowdcue")) {
             if($filter_areas):
                 $filter_areas = explode(",", $filter_areas);
                 $events['info']['filter']['areas'] = $filter_areas;
-                // $query_args['meta_query'][] = array(
-                //     'key' => 'og-event-flags',
-                //     'value' => $flags[$df],
-                //     'compare' => 'NOT IN'                        
-                // );
-                foreach($filter_areas as $a):
-                    //echo $areas[$a];
+
+                foreach($filter_areas as $fa):
+                    $query_args['meta_query'][] = array(
+                        'key' => 'og-event-venue-city',
+                        'value' => $fa,
+                        'compare' => 'LIKE'                             
+                    );
                 endforeach;
             else:
                 if(count($disabled_areas) > 0 && is_array($disabled_areas)):
@@ -1247,12 +1261,21 @@ if (!class_exists("Crowdcue")) {
         */
         function api_area_list_response_data( $data ){
 
-            $areas = $this->og_api_areas(); $response = array();
+            global $wpdb; $areas_tmp = array(); $response = array();
+            
+            $area_rows = $wpdb->get_results( 'SELECT meta_value FROM ' . $wpdb->postmeta . ' WHERE `meta_key` = "_og-event-venue-city"', ARRAY_A);
+            foreach($area_rows as $row){  
+                $row_name = trim(preg_replace('/(\v|\s)+/', ' ', $row['meta_value']));
 
-            foreach($areas as $key => $value):
+                $areas_tmp[] = $row_name;
+            }
+            $areas_tmp = array_unique($areas_tmp);
+            sort($areas_tmp);
+
+            foreach($areas_tmp as $area):
                 $response[] = array(
-                    "slug" => $key,
-                    "output" => $value
+                    "slug" => $area,
+                    "output" => $area
                 );
             endforeach;
 
@@ -1267,7 +1290,10 @@ if (!class_exists("Crowdcue")) {
         */
         function api_category_list_response_data( $data ){
 
+
+            $disabled_flags = carbon_get_theme_option( 'og-disabled-flags' );
             $flags = $this->og_api_flags(); $response = array();
+
             foreach($flags as $key => $val):
 
                 if ( preg_match('/\s/', $val) ):
@@ -1305,17 +1331,25 @@ if (!class_exists("Crowdcue")) {
                         $cache_status = "true";
                     endif; 
 
-                    $response[] = array(
-                        "id" => $key,
-                        "slug" => $val,
-                        "output" => $flag_output,
-                        "total" => $total_events,
-                        "cache" => $cache_status
-                    );
+                    if(!in_array($key, $disabled_flags)):
+                        $response[] = array(
+                            "id" => $key,
+                            "slug" => $val,
+                            "output" => $flag_output,
+                            "total" => $total_events,
+                            "cache" => $cache_status
+                        );
+                    endif;
 
                 endif;
 
             endforeach;
+
+            $categories = array();
+            foreach ($response as $key => $row):
+                $categories[$key] = $row['output'];
+            endforeach;   
+            array_multisort($categories, SORT_ASC, $response);
             
             return $response;
 
@@ -1762,6 +1796,146 @@ if (!class_exists("Crowdcue")) {
 
             $response['total'] = $query->post_count;
             $response['info'] = $flag_count;
+
+            return $response;
+
+        }
+
+
+        /**
+        * API Bucket Lists Events Response (JSON Data)
+        *
+        * @since 1.2.0
+        */
+        function api_bucket_response_data( $data ){
+
+            extract($_GET);
+
+            $response = array(); $response_events = array();
+            if($events){
+                
+                $events = explode(",", $events);
+                $events = array_unique($events);
+                $response['filter']['events'] = $events;
+    
+                $query_args = array(
+                    'post_type'=>'og_events',
+                    'meta_query' => array(
+                        'relation' => 'AND',
+                        array(
+                            'key' => 'og-event-start-date-unix',
+                            'value' => time(),
+                            'compare' => '>='
+                        ),
+                    ),
+                    'meta_key' => '_og-event-popularity-score',
+                    'orderby' => 'meta_value',
+                    'order' => 'DESC',
+                    'posts_per_page' => -1,
+                );
+
+                $dynamic_flags_query_args = array(
+                    "relation" => "OR"
+                );
+                foreach($events as $event):
+                    $dynamic_flags_query_args[] = array(
+                        'key' => '_og-event-uuid',
+                        'value' => $event,
+                        'compare' => '='    
+                    );
+                endforeach;
+
+                $query_args['meta_query'][] = $dynamic_flags_query_args;
+
+                $query = new WP_Query($query_args);
+    
+                $og_time_format = carbon_get_theme_option( 'og-time-format' );
+                if(!$og_time_format): $og_time_format = "F j, Y, g:i a"; endif;
+    
+                $og_time_zone = carbon_get_theme_option( 'og-time-zone' );
+                if(!$og_time_zone): $og_time_zone = "US/Eastern"; endif;
+    
+                date_default_timezone_set($og_time_zone);
+                while($query->have_posts()) :
+                    $query->the_post();
+    
+                    $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                    $og_output_end = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+        
+                    $og_output_start = strtotime(carbon_get_the_post_meta( 'og-event-start-date' ));
+                    $og_output_date = date('m/d/y g:i a', $og_output_start); 
+                    $og_gcal_start_date = date("Ymd" . '__' . "Gi", $og_output_start);
+    
+                    if(carbon_get_the_post_meta( 'og-event-end-date' )):
+                        $end_date = date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-end-date' )));
+                        $end_date_unix = strtotime(carbon_get_the_post_meta( 'og-event-end-date' ));
+                        if( date('m/d/y', $og_output_start) == date('m/d/y', $end_date_unix)):
+                            $og_output_date = date('m/d/y g:i a', $og_output_start) . " - " . date('g:i a', $end_date_unix);
+                        else:
+                            $og_output_date = date('m/d/y', $og_output_start) . " - " . date('m/d/y', $end_date_unix);
+                        endif;
+                        $og_gcal_end_date = date("Ymd" . '__' . "Gi", $end_date_unix);
+                    else:
+                        $end_date = "";
+                        $end_date_unix = "";
+                    endif;
+    
+                    $og_gcal_start_date = str_replace("__", "T", $og_gcal_start_date);
+                    $og_gcal_end_date = str_replace("__", "T", $og_gcal_end_date);
+    
+                    $response_events[] = array(
+                        "id" => get_the_ID(),
+                        "slug" => get_post_field( 'post_name' ),
+                        "name" => carbon_get_the_post_meta( 'og-event-name' ),
+                        "uuid" => carbon_get_the_post_meta( 'og-event-uuid' ),
+                        "popularity_score" => carbon_get_the_post_meta( 'og-event-popularity-score' ),
+                        "description" => carbon_get_the_post_meta( 'og-event-description' ),
+                        "flags" => json_decode(carbon_get_the_post_meta( 'og-event-flags' )),
+                        "start_date" => date($og_time_format, strtotime(carbon_get_the_post_meta( 'og-event-start-date' ))),
+                        "end_date" => $end_date,
+                        "start_date_unix" => carbon_get_the_post_meta( 'og-event-start-date-unix' ),
+                        "end_date_unix" => $end_date_unix,
+                        "date_formatted" => $og_output_date,
+                        "source_url" => carbon_get_the_post_meta( 'og-event-source-url' ),
+                        "image_url" => carbon_get_the_post_meta( 'og-event-image-url' ),
+                        "ticket_url" => carbon_get_the_post_meta( 'og-event-ticket-url' ),
+                        "venue_name" => carbon_get_the_post_meta( 'og-event-venue-name' ),
+                        "venue_uuid" => carbon_get_the_post_meta( 'og-event-venue-uuid' ),
+                        "venue_address_1" => carbon_get_the_post_meta( 'og-event-venue-address-1' ),
+                        "venue_address_2" => carbon_get_the_post_meta( 'og-event-venue-address-2' ),
+                        "venue_city" => carbon_get_the_post_meta( 'og-event-venue-city' ),
+                        "venue_state" => carbon_get_the_post_meta( 'og-event-venue-state' ),
+                        "venue_zip" => carbon_get_the_post_meta( 'og-event-venue-zip-code' ),
+                        "venue_country" => carbon_get_the_post_meta( 'og-event-venue-country' ),
+                        "latitude" => carbon_get_the_post_meta( 'og-event-venue-latitude' ),
+                        "longitude" => carbon_get_the_post_meta( 'og-event-venue-longitude' )
+                    );
+    
+                    $venue_name = carbon_get_the_post_meta( 'og-event-venue-name' );
+                    $venue_uuid = carbon_get_the_post_meta( 'og-event-venue-uuid' );
+                    $venue_address_1 = carbon_get_the_post_meta( 'og-event-venue-address-1' );
+                    $venue_address_2 = carbon_get_the_post_meta( 'og-event-venue-address-2' );
+                    $venue_city = carbon_get_the_post_meta( 'og-event-venue-city' );
+                    $venue_state = carbon_get_the_post_meta( 'og-event-venue-state' );
+                    $venue_zip = carbon_get_the_post_meta( 'og-event-venue-zip-code' );
+                    $venue_country = carbon_get_the_post_meta( 'og-event-venue-country' );
+                    
+                endwhile;
+                wp_reset_query();
+
+                shuffle($response_events);
+                if(!$limit):
+                    $response_events = array_slice($response_events, 0, 4);
+                endif;
+                
+                $response['total'] = count($response_events);
+                $response['events'] = $response_events;
+
+            }else{
+
+                $response['error'] = "true";
+
+            }
 
             return $response;
 

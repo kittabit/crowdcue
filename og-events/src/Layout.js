@@ -3,8 +3,10 @@ import './index.css';
 
 const Layout = () => {
   return (
-    <>      
-      <Outlet /> 
+    <>    
+      <div className="og-master-container">  
+        <Outlet /> 
+      </div>
     </>
   )
 };
