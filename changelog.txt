@@ -1,6 +1,25 @@
 # Changelog
 All notable changes `Crowdcue` will be documented in this file.
 
+## [1.2.0] - 2022-04-21
+### Added
+- Google Analytics Support & Tracking
+- Like/Dislike Events
+- `For You` page (liked events)
+- Home & Header CSS Classes (for overrides)
+### Changed
+- Event Filter Props, State, and Component
+- Event, Grid, and Section CSS Class Conditionals
+### Fixed
+- Consistent Component Usage (for EventGridItem)
+
+## [1.1.0] - 2022-04-20
+### Added
+- Areas API 
+- Filtering System Initial Buildout
+### Updates
+- Plural Categories Changes
+
 ## [1.0.1] - 2022-04-13
 ### Chore:
 - Rebranding due to copyright issues

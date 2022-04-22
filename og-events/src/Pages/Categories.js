@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Link } from "react-router-dom";
 import Breadcrumbs from '../Components/Breadcrumbs';
 import Loading from '../Components/Loading';
-
+import ReactGA from 'react-ga';
 class Categories extends Component {
 
     constructor (props){
@@ -28,6 +28,9 @@ class Categories extends Component {
 
         document.title = "Local Event Categories";
 
+        if(window.ogSettings.og_ga_ua){
+            ReactGA.pageview(window.location.pathname + window.location.search);            
+        }          
     } 
     
     render(){

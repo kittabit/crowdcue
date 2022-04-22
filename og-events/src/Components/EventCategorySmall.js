@@ -51,7 +51,7 @@ class EventCategorySmall extends React.Component {
                                         </p>
 
                                         <Link to={`/events/category/${ this.state.category.Name }`} className="no-underline">
-                                            <button className="float-right bg-gray-800 text-white px-2 py-2 rounded-none text-1xl font-semibold hover:bg-gray-800 transition duration-300 mt-[5px] pl-[10px] pr-[10px] uppercase text-base pt-[12px] leading-none hover:bg-gray-600">View All</button>    
+                                            <button className="float-right bg-gray-800 text-white px-2 py-2 rounded-none text-base font-medium hover:bg-gray-800 transition duration-300 mt-[5px] pl-[15px] pr-[15px] uppercase text-base pt-[12px] leading-none hover:bg-gray-600">View All</button>    
                                         </Link>
                                     </div>
                                 </div>

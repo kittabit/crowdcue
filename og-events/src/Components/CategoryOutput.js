@@ -3,7 +3,7 @@ import Breadcrumbs from './Breadcrumbs';
 import Loading from './Loading';
 import EventGridItem from "./EventGridItem"
 import { Link } from 'react-router-dom';
-
+import ReactGA from 'react-ga';
 class CategoryOutput extends Component {
 
     constructor (props){
@@ -40,6 +40,9 @@ class CategoryOutput extends Component {
 
         document.title = "All Categories for Local Events";
 
+        if(window.ogSettings.og_ga_ua){
+            ReactGA.pageview(window.location.pathname + window.location.search);            
+        }          
     } 
 
     fetchData = async (url) => {

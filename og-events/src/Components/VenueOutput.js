@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
-import { Link } from "react-router-dom";
 import Breadcrumbs from './Breadcrumbs';
 import Loading from './Loading';
-
+import EventGridItem from "./EventGridItem"
+import ReactGA from 'react-ga';
 class VenueOutput extends Component {
 
     constructor (props){
@@ -35,6 +35,9 @@ class VenueOutput extends Component {
           isLoading: 0
         }));        
 
+        if(window.ogSettings.og_ga_ua){
+            ReactGA.pageview(window.location.pathname + window.location.search);            
+        } 
     } 
 
     fetchData = async (url) => {
@@ -116,17 +119,7 @@ class VenueOutput extends Component {
                                 </div>
 
                                 {this.state.venue_events.map((item, index) => (   
-                                    <div className="col-span-3 bg-rose-700 rounded-xl h-52 md:h-80 no-underline" key={index}>
-                                        <Link to={`/events/details/${ item.slug }`} className="no-underline">
-                                            <img src={ item.image_url } alt={ item.name } className="rounded-t-xl max-h-44" />
-                                            <p className="text-xl text-gray-50 pt-4 pl-3 no-underline text-ellipsis ... overflow-hidden line-clamp-2 h-20 pb-1 mb-0"> { item.name } </p>
-                                            <p className="text-xs md:text-lg font-light text-gray-50 pt-0 pl-3 pb-0 mb-0 no-underline"> 
-                                                { item.date_formatted } <br />
-                                                { item.venue_city }, { item.venue_state }
-                                            </p>
-                                            <span className="text-xs md:text-lg font-light decoration-white	underline text-white text-center block mt-1 underline-offset-4">More Info</span>
-                                        </Link>
-                                    </div>
+                                    <EventGridItem item={item} key={index} />
                                 ))}
                             </>
                         )}  

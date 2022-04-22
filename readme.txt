@@ -40,6 +40,7 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 *  og-design-hp-btn-text
 *  og-design-hp-btn-url
 *  og-developer-security-key
+*  og-analytics-ua-id
 
 == Post Types ==
 *  og_events
@@ -69,6 +70,7 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 *  og-event-venue-latitude
 *  og-event-venue-longitude
 
+
 == API Routes ==
 
 ###  All Events
@@ -78,6 +80,10 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 ###  All Flags (Categories)
 
 `/wp-json/occasiongenius/v1/flags`
+
+###  All Areas
+
+`/wp-json/occasiongenius/v1/areas`
 
 ###  Single Flag (Category)
 
@@ -90,7 +96,6 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 ###  Single Venue
 
 `/wp-json/occasiongenius/v1/venue/[uuid]`
-
 
 
 == React Setup ==
@@ -117,10 +122,26 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 --  Home.js
 --  SingleCategory.js
 --  SingleVenue.js
+--  ForYou.js
+
+== CSS Overrides ==
+
+### Global
+* og-master-container
+
+### Home
+* og-header-container   
+* og-header-container-outer    
+* og-header-container-inner-inner 
+* og-header-container-inner-right
+* og-header-container-inner-right-h1
+* og-header-container-inner-right-p
+* og-header-container-inner-left
+* og-home-view-all-buttons
+* og-home-view-all-categories 
+* og-home-view-all-events
 
 == Coming Soon / Todo's ==
-
-*  Search and Filter Components (All Events)
 
 *  Popularity Score Queries/Sorting
 
@@ -129,5 +150,3 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 *  Google Map Nearby Events (Map Markers w/ other listings)
 
 *  Pre-Defined Cookies / LocalStorage (for inner-events queries - such as booking dates)
-
-*  Bucket List (user highlighted/stored events)
