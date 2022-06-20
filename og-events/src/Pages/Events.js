@@ -17,7 +17,7 @@ class Events extends Component {
             events_url: '/wp-json/occasiongenius/v1/events?limit=12&page=',
             isLoading: 1,
             start_date: window.ogSettings.og_base_date,
-            end_date: '',
+            end_date: window.ogSettings.og_max_base_date,
             min_date: window.ogSettings.og_min_base_date,
             max_date: window.ogSettings.og_max_base_date,
             filter_categories: '',
@@ -155,7 +155,7 @@ class Events extends Component {
         return (
             <>
 
-                <Breadcrumbs parent_title="All Categories" parent_url="/events/categories/" page_name="All Local Events" disable_all_events="true" />
+                <Breadcrumbs parent_title="All Categories" parent_url="/categories/" page_name="All Local Events" disable_all_events="true" />
                 
                 <div className="col-span-12">
                     <div className="flow-root">

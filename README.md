@@ -12,9 +12,12 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 1.  Shortcode: Add the `[occasiongenius_events]` Shortcode to the page.
 2.  Blocks: Add the `OccasionGenius Events` Block via Gutenberg.
 
-![Occasion Genius Screenshot #1](/public/images/v0_9_0_img1.png)
-![Occasion Genius Screenshot #2](/public/images/v0_9_0_img2.png)
-![Occasion Genius Screenshot #3](/public/images/v0_9_0_img3.png)
+![Occasion Genius Screenshot #1](/public/images/v1_3_0_img_1.png)
+![Occasion Genius Screenshot #2](/public/images/v1_3_0_img_2.png)
+![Occasion Genius Screenshot #3](/public/images/v1_3_0_img_3.png)
+![Occasion Genius Screenshot #4](/public/images/v1_3_0_img_4.png)
+![Occasion Genius Screenshot #5](/public/images/v1_3_0_img_5.png)
+![Occasion Genius Screenshot #6](/public/images/v1_3_0_img_6.png)
 
 ##  Carbon Fields / Options
 *  og-token-key
@@ -89,6 +92,10 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 
 `/wp-json/occasiongenius/v1/venue/[uuid]`
 
+###  Nearby Locations/Events
+
+`/wp-json/occasiongenius/v1/nearby/[uuid]`
+
 ##  React Setup
 
 - Layout.js
@@ -103,6 +110,7 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 - Loading.js
 - RelatedEvents.js
 - VenueOutput.js
+- UpcomingForYou.js
 - Components/
 - OGUserLogging.js
 - Pages/
@@ -134,7 +142,5 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 *  Popularity Score Queries/Sorting
 
 *  Recommendation Logic (other events on this day, in the area, and personalization)
-
-*  Google Map Nearby Events (Map Markers w/ other listings)
 
 *  Pre-Defined Cookies / LocalStorage (for inner-events queries - such as booking dates)

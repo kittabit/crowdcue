@@ -4,7 +4,7 @@
  * Plugin Name: Crowdcue
  * Plugin URI: https://github.com/kittabit/crowdcue
  * Description: Crowdcue allows you to easily output a beautiful and simple events page without any coding using OccasionGenius.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: Nicholas Mercer (@kittabit)
  * Author URI: https://kittabit.com
  */
@@ -36,7 +36,7 @@ if (!class_exists("Crowdcue")) {
 
             $this->OG_WIDGET_PATH = plugin_dir_path( __FILE__ ) . '/og-events';
             $this->OG_ASSET_MANIFEST = $this->OG_WIDGET_PATH . '/build/asset-manifest.json';
-            $this->OG_DB_VERSION = "1.2.0";
+            $this->OG_DB_VERSION = "1.3.0";
 
             register_activation_hook( __FILE__, array($this, 'og_install') );
             add_action( 'init', array($this, 'og_pretty_urls') );
@@ -113,6 +113,12 @@ if (!class_exists("Crowdcue")) {
                     'callback' => array($this, 'api_event_flags_response_data'),
                 ));
             });
+            add_action( 'rest_api_init', function () {
+                register_rest_route( 'occasiongenius/v1', '/nearby/(?P<id>\S+)', array(
+                    'methods' => 'GET',
+                    'callback' => array($this, 'api_nearby_response_data'),
+                ));
+            });                
             add_action( 'wp', array($this, 'og_scheduled_tasks') );
             add_action( 'og_sync_events', array($this, 'import_events') );
             add_action( 'og_purge_events', array($this, 'purge_events') );            
@@ -804,7 +810,7 @@ if (!class_exists("Crowdcue")) {
                 'og_ga_ua': '<?php echo esc_js( $og_analytics_id ); ?>'
             }
             </script>            
-            <div id="App" class="og-root"></div>
+            <div id="App" class="og-root" data-baseurl="/events"></div>
             <?php
             return ob_get_clean();
 
@@ -1158,6 +1164,10 @@ if (!class_exists("Crowdcue")) {
             $query_args = array(
                 'post_type'=>'og_events',
                 'meta_query' => array(
+                    'order_clause' => array(
+                        'key' => 'og-event-start-date-unix',
+                        'type' => 'NUMERIC' 
+                    ),                    
                     array(
                         'key' => 'og-event-start-date-unix',
                         'value' => time(),
@@ -1169,6 +1179,7 @@ if (!class_exists("Crowdcue")) {
                         'compare' => 'LIKE'                        
                     )                    
                 ),
+                'orderby' => 'order_clause',
                 'order' => 'asc',
                 'posts_per_page' => $limit,
                 'paged' => $page,
@@ -1388,6 +1399,84 @@ if (!class_exists("Crowdcue")) {
 
         }
 
+
+        /**
+        * API Nearby Events (JSON)
+        *
+        * @since 1.3.0
+        */
+        function api_nearby_response_data( $data ){
+
+            $selected_event = $data['id'];
+            $select_event_lat = get_post_meta( $selected_event, '_og-event-venue-latitude', true );
+            $select_event_long = get_post_meta( $selected_event, '_og-event-venue-longitude', true );
+
+            $data = array(); $distances = array();
+            $data['base'] = array(
+                "base_id" => $selected_event,
+                "base_lat" => $select_event_lat,
+                "base_long" => $select_event_long,
+            );
+
+            $query_args = array(
+                'post_type'=>'og_events',
+                'meta_query' => array(
+                    array(
+                        'key' => 'og-event-start-date-unix',
+                        'value' => time(),
+                        'compare' => '>='
+                    )        
+                ),
+                'order' => 'asc',
+                'posts_per_page' => -1
+            );
+            $query = new WP_Query($query_args);
+
+            $og_time_format = carbon_get_theme_option( 'og-time-format' );
+            if(!$og_time_format): $og_time_format = "F j, Y, g:i a"; endif;
+
+            $og_time_zone = carbon_get_theme_option( 'og-time-zone' );
+            if(!$og_time_zone): $og_time_zone = "US/Eastern"; endif;
+
+            date_default_timezone_set($og_time_zone);
+            while($query->have_posts()) :
+                $query->the_post();
+
+                $nearby_lat = carbon_get_the_post_meta( 'og-event-venue-latitude' );
+                $nearby_long = carbon_get_the_post_meta( 'og-event-venue-longitude' );
+
+                $theta = $select_event_lat - $nearby_lat;
+                $dist = sin(deg2rad($select_event_lat)) * sin(deg2rad($nearby_lat)) +  cos(deg2rad($select_event_lat)) * cos(deg2rad($nearby_lat)) * cos(deg2rad($theta));
+                $dist = acos($dist);
+                $dist = rad2deg($dist);
+                $dist = $dist * 60 * 1.1515;
+
+                if($dist != "8.3420528255350918e-5"):
+                    $distances[] = array(
+                        "ID" => get_the_ID(),
+                        "slug" => get_post_field( 'post_name' ),
+                        "latitude" => $nearby_lat,
+                        "longitude" => $nearby_long,                    
+                        "distance" => $dist
+                    );
+                endif;
+
+            endwhile;
+            wp_reset_query();
+
+            $distance = array();
+            foreach ($distances as $key => $row){
+                $distance[$key] = $row['distance'];
+            }
+            array_multisort($distance, SORT_ASC, $distances);
+            $distances = array_slice($distances, 0, 25);
+
+            $data['results'] = $distances;
+
+            return $data;
+
+        }
+        
 
         /**
         * API Venue Events Response (JSON Data)

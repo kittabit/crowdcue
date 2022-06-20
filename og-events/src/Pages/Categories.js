@@ -48,7 +48,7 @@ class Categories extends Component {
                             {this.state.categories.map((item, index) => (
                             <>
                                 <li className="block px-6 py-2 border-b border-gray-200 w-full hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-0 focus:bg-gray-200 focus:text-gray-600 transition duration-500 cursor-pointer" key={index}>
-                                    <Link to={`/events/category/${ item.slug }`} className="no-underline text-gray-800">
+                                    <Link to={`/category/${ item.slug }`} className="no-underline text-gray-800">
                                         { item.output }
 
                                         <span className="inline-flex items-center justify-center px-2 py-1 mr-2 text-xs font-bold leading-none text-red-100 bg-gray-800 rounded-full inline-block float-right">

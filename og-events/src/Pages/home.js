@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Header from '../Components/Header';
 import EventCategorySmall from '../Components/EventCategorySmall';
 import PersonalizedEvents from '../Components/PersonalizedEvents';
+import UpcomingForYou from '../Components/UpcomingForYou';
 import ReactGA from 'react-ga';
 class Home extends Component {
 
@@ -60,7 +61,9 @@ class Home extends Component {
 
         return (
             <>
-            
+
+                <UpcomingForYou />
+
                 <Header />
 
                 {this.state.user_personalized_events_count === 4 &&
@@ -82,11 +85,11 @@ class Home extends Component {
                 ))}
 
                 <div className="flex items-center flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6 lg:space-x-8 mt-8 md:mt-16 og-home-view-all-buttons">
-                    <Link to="/events/categories" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:bg-gray-600 hover:text-white no-underline text-center og-home-view-all-categories">
+                    <Link to="/categories" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:bg-gray-600 hover:text-white no-underline text-center og-home-view-all-categories">
                         View All Categories
                     </Link>
 
-                    <Link to="/events/all" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:bg-gray-600 hover:text-white no-underline text-center og-home-view-all-events">
+                    <Link to="/all" className="block w-full md:w-3/5 border border-gray-800 text-base font-medium leading-none text-white uppercase py-6 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 bg-gray-800 hover:bg-gray-600 hover:text-white no-underline text-center og-home-view-all-events">
                         View All Events
                     </Link>                    
                 </div>

@@ -106,7 +106,7 @@ class CategoryOutput extends Component {
         return (
             <>
 
-                <Breadcrumbs parent_title="All Categories" parent_url="/events/categories/" page_name={ this.state.category_data.Output } />
+                <Breadcrumbs parent_title="All Categories" parent_url="/categories/" page_name={ this.state.category_data.Output } />
                 
                 <div className="flex items-center justify-center bg-white mb-16">                          
                     <div className="grid grid-cols-12 px-18 gap-5">

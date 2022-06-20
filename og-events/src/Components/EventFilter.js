@@ -52,7 +52,7 @@ class EventFilter extends React.Component {
                             <Loading />
                         ) : (
                             <>
-                            <select onChange={this.props.handleCategories} name="filter_categories" id="filter_categories" class="form-multiselect block w-full mt-1 text-sm" multiple>
+                            <select onChange={this.props.handleCategories} name="filter_categories" id="filter_categories" class="form-multiselect block w-full mt-1 text-sm overscroll-auto" multiple>
                                 <option value="" selected>All Categories</option>
                                 {this.state.categories.map((item, index) => (
                                     <>
@@ -72,7 +72,7 @@ class EventFilter extends React.Component {
                             <Loading />
                         ) : (
                             <>
-                            <select onChange={this.props.handleAreas} name="filter_areas" id="filter_areas" class="form-multiselect block w-full mt-1 text-sm" multiple>
+                            <select onChange={this.props.handleAreas} name="filter_areas" id="filter_areas" class="form-multiselect block w-full mt-1 text-sm overscroll-auto" multiple>
                                 <option value="" selected>All Areas</option>
                                 {this.state.areas.map((item, index) => (
                                     <>

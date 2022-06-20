@@ -71,7 +71,7 @@ class PersonalizedEvents extends React.Component {
 
                                         {this.props.liked &&
                                             <>
-                                                <Link to="/events/for-you" className="no-underline">
+                                                <Link to="/for-you" className="no-underline">
                                                     <button className="float-right bg-gray-800 text-white px-2 py-2 rounded-none text-base font-medium hover:bg-gray-800 transition duration-300 mt-[5px] pl-[15px] pr-[15px] uppercase text-base pt-[12px] leading-none hover:bg-gray-600 mt-0">
                                                         See More
                                                     </button>    

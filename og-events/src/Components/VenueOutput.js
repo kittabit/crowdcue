@@ -101,7 +101,7 @@ class VenueOutput extends Component {
         return (
             <>
 
-                <Breadcrumbs parent_title="All Events" parent_url="/events/all/" page_name={ this.state.venue_data.venue_name} />
+                <Breadcrumbs page_name={ this.state.venue_data.venue_name} />
                 
                 <div className="flex items-center justify-center bg-white mb-16">                          
                     <div className="grid grid-cols-12 px-18 gap-5">

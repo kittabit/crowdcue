@@ -1,6 +1,18 @@
 # Changelog
 All notable changes `Crowdcue` will be documented in this file.
 
+## [1.3.0] - 2022-06-20
+### Added
+- New UpcomingEvents Banner/Call To Action
+- Nearby Events
+### Changed
+- React v17.x upgrade to v18.x
+- Base URL Logic (versus fixed URL for `events`)
+- General Layout Cleanup
+### Fixed
+- Category Event Order
+- Duplicate All Events (Breadcrumbs)
+
 ## [1.2.0] - 2022-04-21
 ### Added
 - Google Analytics Support & Tracking

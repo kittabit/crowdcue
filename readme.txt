@@ -3,8 +3,8 @@ Contributors: kittabit
 Donate link:
 Tags: events, calendar, event, schedule, organizer, venue
 Requires at least: 5.4
-Tested up to: 5.9.1
-Stable tag: 1.0.1
+Tested up to: 6.0
+Stable tag: 1.3.0
 Requires PHP: 7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -97,6 +97,10 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 
 `/wp-json/occasiongenius/v1/venue/[uuid]`
 
+###  Nearby Locations / Events
+
+`/wp-json/occasiongenius/v1/nearby/[uuid]`
+
 
 == React Setup ==
 
@@ -113,6 +117,7 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 --  Loading.js
 --  RelatedEvents.js
 --  VenueOutput.js
+--  UpcomingForYou.js
 --  Components/
 ----  OGUserLogging.js
 - Pages/
@@ -146,7 +151,5 @@ After this has been completed, you can add to an "Events" (/events/) page via ei
 *  Popularity Score Queries/Sorting
 
 *  Recommendation Logic (other events on this day, in the area, and personalization)
-
-*  Google Map Nearby Events (Map Markers w/ other listings)
 
 *  Pre-Defined Cookies / LocalStorage (for inner-events queries - such as booking dates)
