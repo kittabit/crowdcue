@@ -16,17 +16,20 @@ if(window.ogSettings.og_ga_ua){
 }
 class App extends Component {
   render() {
+
+    const site_baseurl = document.getElementById('App').getAttribute('data-baseurl')
+
     return (
-    <BrowserRouter>
+    <BrowserRouter basename={ site_baseurl }>
         <Routes>
-          <Route exact path="/events/" element={<Layout />}>
+          <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
-            <Route path="/events/categories" element={<Categories />} />
-            <Route path="/events/category/:slug" element={<SingleCategory />} />
-            <Route path="/events/all" element={<Events />} />
-            <Route path="/events/for-you" element={<ForYou />} />
-            <Route path="/events/details/:slug" element={<EventDetails />} />
-            <Route path="/events/venue/:uuid" element={<SingleVenue />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/category/:slug" element={<SingleCategory />} />
+            <Route path="/all" element={<Events />} />
+            <Route path="/for-you" element={<ForYou />} />
+            <Route path="/details/:slug" element={<EventDetails />} />
+            <Route path="/venue/:uuid" element={<SingleVenue />} />
           </Route>
         </Routes> 
     </BrowserRouter>

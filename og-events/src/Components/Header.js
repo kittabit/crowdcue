@@ -8,7 +8,7 @@ class Header extends React.Component {
             
             <>     
 
-                <div className="py-16 bg-white og-header-container">
+                <div className="py-12 bg-white og-header-container">
                     <div className="container m-auto px-3 space-y-8 text-gray-500 md:px-3 lg:px-3 og-header-container-outer">
                         <div className="justify-center text-center gap-6 md:text-left md:flex lg:items-center lg:gap-16 og-header-container-inner-inner">
                             <div className="order-last mb-6 space-y-6 md:mb-0 md:w-6/12 lg:w-6/12 og-header-container-inner-right">
@@ -21,9 +21,9 @@ class Header extends React.Component {
                                 
                                 <div className="justify-center gap-4 md:gap-6 md:justify-end w-full text-center">
                                     
-                                        <a href={window.ogSettings.og_hp_btn_url}>
-                                            <button type="button" title={window.ogSettings.og_hp_btn_text} className="w-full pt-2 pb-2 px-6 text-center rounded-xl transition bg-gray-800 shadow-xl hover:bg-gray-600 sm:w-max inline-block">
-                                                <span className="block text-white font-semibold pt-px pb-px">
+                                        <a href={window.ogSettings.og_hp_btn_url} className="w-full bg-gray-800 text-white px-2 py-2 rounded-none text-base font-medium hover:bg-gray-800 transition duration-300 pl-[15px] pr-[15px] uppercase text-base pt-[15px] leading-none hover:bg-gray-600 mt-0">
+                                            <button type="button" title={window.ogSettings.og_hp_btn_text} className="w-full bg-gray-800 text-white px-2 py-2 rounded-none text-base font-medium hover:bg-gray-800 transition duration-300 pl-[15px] pr-[15px] uppercase text-base pt-[15px] leading-none hover:bg-gray-600 mt-0">
+                                                <span className="block text-white font-semibold pt-px pb-px relative">
                                                     {window.ogSettings.og_hp_btn_text}
                                                 </span>
                                             </button>

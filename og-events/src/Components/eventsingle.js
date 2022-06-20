@@ -284,7 +284,7 @@ class EventSingle extends React.Component {
                                     <Breadcrumbs page_name="Event Not Found" />
 
                                     <div className="col-span-12 text-center mb-12">
-                                        <p className="text-gray-800 ml-1 md:ml-2 text-sm font-medium">There were no events found matching your request, please <Link to="/events/categories">view all categories</Link> or <Link to="/events/">return to all events</Link>.</p>
+                                        <p className="text-gray-800 ml-1 md:ml-2 text-sm font-medium">There were no events found matching your request, please <Link to="/categories">view all categories</Link> or <Link to="/">return to all events</Link>.</p>
                                     </div>
 
                                 </>
@@ -451,13 +451,13 @@ class EventSingle extends React.Component {
                                                     Get Directions
                                                 </a>
 
-                                                <Link to={`/events/venue/${ this.state.event.venue_uuid }`} className="inline-block w-2/5 border border-gray-800 text-base font-medium leading-none text-gray-800 uppercase py-6 bg-transparent focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-gray-800 hover:bg-gray-600 hover:text-gray-600 no-underline text-center mt-4 pl-2 pr-2">
+                                                <Link to={`/venue/${ this.state.event.venue_uuid }`} className="inline-block w-2/5 border border-gray-800 text-base font-medium leading-none text-gray-800 uppercase py-6 bg-transparent focus:outline-none focus:ring-2 focus:ring-offset-2  focus:ring-gray-800 hover:bg-gray-600 hover:text-gray-600 no-underline text-center mt-4 pl-2 pr-2">
                                                     Venue's Events
                                                 </Link>
                                             </div>
 
                                             { this.state.event.latitude &&
-                                                <MapOutput latitude={ this.state.event.latitude } longitude={this.state.event.longitude} />
+                                                <MapOutput storageid={ this.state.event.id } latitude={ this.state.event.latitude } longitude={this.state.event.longitude} />
                                             }                                                                             
                                         </div>
                                     </div>
